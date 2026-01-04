@@ -1,0 +1,45 @@
+cmake_minimum_required(VERSION 3.10)
+project(JumpShoot VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Gather source files
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    
+    # Emscripten flags
+    # --preload-file assets@/assets maps the local 'assets' folder to '/assets' in the WASM VFS
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='[\"png\"]' -s USE_SDL_TTF=2 -s ALLOW_MEMORY_GROWTH=1 --preload-file ${CMAKE_SOURCE_DIR}/assets@/assets")
+
+    add_executable(JumpShoot ${SOURCES})
+else()
+    # Native Build
+    # Find SDL2
+    find_package(SDL2 REQUIRED)
+
+    # Link directories for Homebrew on Apple Silicon
+    link_directories(/opt/homebrew/lib)
+    include_directories(/opt/homebrew/include)
+
+    # Find SDL2_image
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SDL2_IMAGE REQUIRED SDL2_image)
+    pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
+
+    # Include directories
+    include_directories(src ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS} /opt/homebrew/include)
+
+    add_executable(JumpShoot ${SOURCES})
+
+    target_include_directories(JumpShoot PRIVATE ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
+    target_link_libraries(JumpShoot PRIVATE ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${SDL2_TTF_LIBRARIES})
+
+    # Copy assets directory to the build directory
+    add_custom_command(TARGET JumpShoot POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        ${CMAKE_BINARY_DIR}/assets)
+endif()
