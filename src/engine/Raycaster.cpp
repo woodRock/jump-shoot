@@ -129,15 +129,10 @@ void Raycaster::RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map
         int horizon = h / 2 + (int)cam.pitch;
         
         // Vertical offset for jumping (cam.z)
-        // cam.z = 0 (floor), 0.5 (mid), 1.0 (ceil)
-        // Standard eye height is 0.5.
-        // Screen offset = (0.5 - cam.z) * h / perpWallDist
-        // Wait, standard raycasting assumes z=0.5.
-        // If z increases (jump up), wall should move DOWN.
-        int zOffset = (int)((0.5f - cam.z) * lineHeight * 2.0); // Amplified for effect
-        
-        int drawStart = -lineHeight / 2 + horizon + zOffset;
-        int drawEnd = lineHeight / 2 + horizon + zOffset;
+        // Walls are world z=0 to z=1. Camera is at cam.z.
+        // Standard eye height is 0.5 (middle of the wall).
+        int drawStart = horizon - (int)((1.0f - cam.z) * lineHeight);
+        int drawEnd = horizon + (int)(cam.z * lineHeight);
         
         // Texture selection
         int texNum = map.Get(mapX, mapY);

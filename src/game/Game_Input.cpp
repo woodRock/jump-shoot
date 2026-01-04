@@ -2,6 +2,7 @@
 #include "../engine/Input.h"
 #include "../engine/Components.h"
 #include <cmath>
+#include <SDL2/SDL.h>
 
 using namespace PixelsEngine;
 
@@ -86,7 +87,7 @@ void JumpShootGame::HandleInputGameplay(float dt) {
             m_Registry.AddComponent<ProjectileComponent>(arrow, {50.0f, true, 5.0f});
             
             float speed = 20.0f * (0.5f + weapon->drawTime); 
-            float vz = -t->pitch * 0.05f; 
+            float vz = t->pitch * 0.05f; 
             
             m_Registry.AddComponent<PhysicsComponent>(arrow, {cos(t->rot)*speed, sin(t->rot)*speed, vz, 15.0f, false, 0.0f});
             m_Registry.AddComponent<BillboardComponent>(arrow, {m_BowIdle, 0.2f, 0.2f, 0.2f, true}); 
@@ -97,6 +98,32 @@ void JumpShootGame::HandleInputGameplay(float dt) {
 }
 
 void JumpShootGame::HandleInputMenu() {
+    int w, h;
+    SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+    int mx, my;
+    Input::GetMousePosition(mx, my);
+
+    int btnW = 200;
+    int btnH = 50;
+    int startY = 300;
+    int gap = 70;
+    int startX = w/2 - btnW/2;
+    
+    bool action = false;
+
+    // Mouse Interaction
+    for (int i = 0; i < 3; i++) {
+        int by = startY + gap * i;
+        if (mx >= startX && mx <= startX + btnW && my >= by && my <= by + btnH) {
+            if (m_MenuSelection != i) m_MenuSelection = i;
+            
+            if (Input::IsMouseButtonPressed(SDL_BUTTON_LEFT)) {
+                action = true;
+            }
+        }
+    }
+
+    // Keyboard Interaction
     if (Input::IsKeyPressed(SDL_SCANCODE_W) || Input::IsKeyPressed(SDL_SCANCODE_UP)) {
         m_MenuSelection--;
         if (m_MenuSelection < 0) m_MenuSelection = 2;
@@ -107,6 +134,10 @@ void JumpShootGame::HandleInputMenu() {
     }
     
     if (Input::IsKeyPressed(SDL_SCANCODE_RETURN) || Input::IsKeyPressed(SDL_SCANCODE_SPACE)) {
+        action = true;
+    }
+    
+    if (action) {
         if (m_MenuSelection == 0) { // Play
             InitGame();
             m_State = GameState::Playing;
@@ -126,6 +157,32 @@ void JumpShootGame::HandleInputPause() {
         return;
     }
 
+    int w, h;
+    SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+    int mx, my;
+    Input::GetMousePosition(mx, my);
+
+    int btnW = 200;
+    int btnH = 50;
+    int startY = 250;
+    int gap = 70;
+    int startX = w/2 - btnW/2;
+    
+    bool action = false;
+
+    // Mouse Interaction
+    for (int i = 0; i < 4; i++) {
+        int by = startY + gap * i;
+        if (mx >= startX && mx <= startX + btnW && my >= by && my <= by + btnH) {
+             if (m_MenuSelection != i) m_MenuSelection = i;
+
+             if (Input::IsMouseButtonPressed(SDL_BUTTON_LEFT)) {
+                action = true;
+             }
+        }
+    }
+
+    // Keyboard Interaction
     if (Input::IsKeyPressed(SDL_SCANCODE_W) || Input::IsKeyPressed(SDL_SCANCODE_UP)) {
         m_MenuSelection--;
         if (m_MenuSelection < 0) m_MenuSelection = 3;
@@ -136,6 +193,10 @@ void JumpShootGame::HandleInputPause() {
     }
     
     if (Input::IsKeyPressed(SDL_SCANCODE_RETURN) || Input::IsKeyPressed(SDL_SCANCODE_SPACE)) {
+        action = true;
+    }
+    
+    if (action) {
         if (m_MenuSelection == 0) { // Resume
             m_State = GameState::Playing;
             SDL_SetRelativeMouseMode(SDL_TRUE);
