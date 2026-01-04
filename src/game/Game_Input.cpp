@@ -34,36 +34,52 @@ void JumpShootGame::HandleInputGameplay(float dt) {
     // Movement
     float moveSpeed = p->speed * dt;
     float dx = 0, dy = 0;
+    bool isMoving = false;
     
     if (Input::IsKeyDown(SDL_SCANCODE_W)) {
         dx += cos(t->rot) * moveSpeed;
         dy += sin(t->rot) * moveSpeed;
+        isMoving = true;
     }
     if (Input::IsKeyDown(SDL_SCANCODE_S)) {
         dx -= cos(t->rot) * moveSpeed;
         dy -= sin(t->rot) * moveSpeed;
+        isMoving = true;
     }
     if (Input::IsKeyDown(SDL_SCANCODE_A)) {
         dx += cos(t->rot - M_PI/2) * moveSpeed;
         dy += sin(t->rot - M_PI/2) * moveSpeed;
+        isMoving = true;
     }
     if (Input::IsKeyDown(SDL_SCANCODE_D)) {
         dx += cos(t->rot + M_PI/2) * moveSpeed;
         dy += sin(t->rot + M_PI/2) * moveSpeed;
+        isMoving = true;
     }
     
     // Collision Check (Simple Slide)
     if (m_Map.Get(int(t->x + dx * 2), int(t->y)) == 0) t->x += dx;
     if (m_Map.Get(int(t->x), int(t->y + dy * 2)) == 0) t->y += dy;
     
+    // View Bobbing logic
+    if (isMoving && phys->isGrounded) {
+        m_BobTimer += dt * 10.0f;
+    } else {
+        m_BobTimer = 0;
+    }
+
     // Jump
-    if (Input::IsKeyDown(SDL_SCANCODE_SPACE) && phys->isGrounded) {
+    if (Input::IsKeyDown(SDL_SCANCODE_SPACE) && (phys->isGrounded || phys->isWallRunning)) {
         phys->velZ = p->jumpForce;
         phys->isGrounded = false;
+        phys->isWallRunning = false;
     }
     
     // Shooting
-    if (Input::IsMouseButtonDown(SDL_BUTTON_LEFT)) {
+    bool wantsGrapple = Input::IsMouseButtonPressed(SDL_BUTTON_RIGHT) || 
+                        (Input::IsKeyDown(SDL_SCANCODE_E) && Input::IsMouseButtonPressed(SDL_BUTTON_LEFT));
+
+    if (Input::IsMouseButtonDown(SDL_BUTTON_LEFT) && !Input::IsKeyDown(SDL_SCANCODE_E)) {
         if (!weapon->isDrawing && weapon->cooldown <= 0) {
             weapon->isDrawing = true;
             weapon->drawTime = 0.0f;
@@ -71,25 +87,33 @@ void JumpShootGame::HandleInputGameplay(float dt) {
             weapon->drawTime += dt;
             if (weapon->drawTime > 1.0f) weapon->drawTime = 1.0f;
         }
+    } else if (wantsGrapple && weapon->cooldown <= 0) {
+        // Grapple!
+        auto arrow = m_Registry.CreateEntity();
+        float ax = t->x + cos(t->rot) * 0.5f;
+        float ay = t->y + sin(t->rot) * 0.5f;
+        m_Registry.AddComponent<Transform3DComponent>(arrow, {ax, ay, t->z, t->rot, t->pitch});
+        m_Registry.AddComponent<ProjectileComponent>(arrow, {ProjectileComponent::Grapple, 0.0f, true, 2.0f});
+        float speed = 25.0f;
+        m_Registry.AddComponent<PhysicsComponent>(arrow, {cos(t->rot)*speed, sin(t->rot)*speed, t->pitch * 0.05f, 0.0f, false, false, 0.0f, 0.0f});
+        weapon->cooldown = 1.0f;
     } else {
         if (weapon->isDrawing) {
-            // Fire
+            // Fire Arrow
             weapon->isDrawing = false;
             weapon->cooldown = 0.5f;
             
-            // Spawn Arrow
             auto arrow = m_Registry.CreateEntity();
-            float spawnDist = 0.5f;
-            float ax = t->x + cos(t->rot) * spawnDist;
-            float ay = t->y + sin(t->rot) * spawnDist;
+            float ax = t->x + cos(t->rot) * 0.5f;
+            float ay = t->y + sin(t->rot) * 0.5f;
             
             m_Registry.AddComponent<Transform3DComponent>(arrow, {ax, ay, t->z, t->rot, t->pitch});
-            m_Registry.AddComponent<ProjectileComponent>(arrow, {50.0f, true, 5.0f});
+            m_Registry.AddComponent<ProjectileComponent>(arrow, {ProjectileComponent::Arrow, 50.0f, true, 5.0f});
             
             float speed = 20.0f * (0.5f + weapon->drawTime); 
             float vz = t->pitch * 0.05f; 
             
-            m_Registry.AddComponent<PhysicsComponent>(arrow, {cos(t->rot)*speed, sin(t->rot)*speed, vz, 15.0f, false, 0.0f});
+            m_Registry.AddComponent<PhysicsComponent>(arrow, {cos(t->rot)*speed, sin(t->rot)*speed, vz, 15.0f, false, false, 0.0f, 0.0f});
             m_Registry.AddComponent<BillboardComponent>(arrow, {m_BowIdle, 0.2f, 0.2f, 0.2f, true}); 
         }
     }

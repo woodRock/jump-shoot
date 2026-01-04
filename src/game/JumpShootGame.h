@@ -60,4 +60,6 @@ private:
     
     // Main Menu Camera Props
     float m_MenuCamAngle = 0.0f;
+    float m_TimeScale = 1.0f;
+    float m_BobTimer = 0.0f;
 };

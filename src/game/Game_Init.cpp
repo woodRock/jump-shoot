@@ -54,7 +54,7 @@ void JumpShootGame::InitGame() {
     m_PlayerEntity = m_Registry.CreateEntity();
     m_Registry.AddComponent<Transform3DComponent>(m_PlayerEntity, {3.5f, 3.5f, 0.5f, 0.0f, 0.0f});
     m_Registry.AddComponent<PlayerControlComponent>(m_PlayerEntity, {5.0f, 0.003f, 6.0f});
-    m_Registry.AddComponent<PhysicsComponent>(m_PlayerEntity, {0,0,0, 15.0f, false, 5.0f});
+    m_Registry.AddComponent<PhysicsComponent>(m_PlayerEntity, {0,0,0, 15.0f, false, false, 0.0f, 5.0f});
     m_Registry.AddComponent<ColliderComponent>(m_PlayerEntity, {0.3f, 1.0f, true});
     m_Registry.AddComponent<WeaponComponent>(m_PlayerEntity, {0.0f, 0.0f, false});
     

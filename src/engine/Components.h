@@ -28,6 +28,8 @@ struct PhysicsComponent {
   float velZ = 0.0f;
   float gravity = 15.0f;
   bool isGrounded = false;
+  bool isWallRunning = false;
+  float wallRunTimer = 0.0f;
   float friction = 5.0f;
 };
 
@@ -38,6 +40,8 @@ struct ColliderComponent {
 };
 
 struct ProjectileComponent {
+  enum Type { Arrow, Grapple };
+  Type type = Arrow;
   float damage = 10.0f;
   bool active = true;
   float lifeTime = 5.0f;

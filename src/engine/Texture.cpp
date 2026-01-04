@@ -61,4 +61,10 @@ void Texture::SetColorMod(Uint8 r, Uint8 g, Uint8 b) {
   }
 }
 
+void Texture::GetColorMod(Uint8 *r, Uint8 *g, Uint8 *b) const {
+  if (m_Texture) {
+    SDL_GetTextureColorMod(m_Texture, r, g, b);
+  }
+}
+
 } // namespace PixelsEngine

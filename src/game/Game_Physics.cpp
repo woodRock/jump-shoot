@@ -12,7 +12,26 @@ void JumpShootGame::UpdatePhysics(float dt) {
     auto* t = m_Registry.GetComponent<Transform3DComponent>(m_PlayerEntity);
     
     if (phys && t) {
+        // Wall Running check
+        bool nearWall = false;
         if (!phys->isGrounded) {
+            float checkDist = 0.6f;
+            if (m_Map.Get((int)(t->x + checkDist), (int)t->y) > 0 ||
+                m_Map.Get((int)(t->x - checkDist), (int)t->y) > 0 ||
+                m_Map.Get((int)t->x, (int)(t->y + checkDist)) > 0 ||
+                m_Map.Get((int)t->x, (int)(t->y - checkDist)) > 0) {
+                nearWall = true;
+            }
+        }
+
+        if (nearWall && phys->velZ < 0) {
+            phys->isWallRunning = true;
+            phys->velZ = -1.0f; // Slow fall during wall run
+        } else {
+            phys->isWallRunning = false;
+        }
+
+        if (!phys->isGrounded && !phys->isWallRunning) {
             phys->velZ -= phys->gravity * dt;
         }
         
@@ -25,6 +44,24 @@ void JumpShootGame::UpdatePhysics(float dt) {
             phys->isGrounded = true;
         } else if (t->z > 0.5f) {
             phys->isGrounded = false;
+        }
+
+        // Horizontal velocity (Grapple/Knockback)
+        t->x += phys->velX * dt;
+        t->y += phys->velY * dt;
+        
+        // Apply friction
+        float drag = 1.0f - (phys->friction * dt);
+        if (drag < 0) drag = 0;
+        phys->velX *= drag;
+        phys->velY *= drag;
+        
+        // Basic wall collision for horiz velocity
+        if (m_Map.Get((int)t->x, (int)t->y) > 0) {
+            t->x -= phys->velX * dt;
+            t->y -= phys->velY * dt;
+            phys->velX = 0;
+            phys->velY = 0;
         }
     }
 }
@@ -50,7 +87,28 @@ void JumpShootGame::UpdateProjectiles(float dt) {
         phys->velZ -= 5.0f * dt; 
         
         p->lifeTime -= dt;
-        if (p->lifeTime <= 0 || t->z < 0 || m_Map.Get(int(t->x), int(t->y)) > 0) {
+        
+        bool hitWall = m_Map.Get(int(t->x), int(t->y)) > 0;
+        bool hitFloor = t->z < 0;
+
+        if (p->lifeTime <= 0 || hitFloor || hitWall) {
+            if (hitWall && p->type == ProjectileComponent::Grapple) {
+                // Pull player!
+                auto* playerPhys = m_Registry.GetComponent<PhysicsComponent>(m_PlayerEntity);
+                auto* playerTrans = m_Registry.GetComponent<Transform3DComponent>(m_PlayerEntity);
+                if (playerPhys && playerTrans) {
+                    float dx = t->x - playerTrans->x;
+                    float dy = t->y - playerTrans->y;
+                    float dz = t->z - playerTrans->z;
+                    float dist = sqrt(dx*dx + dy*dy + dz*dz);
+                    if (dist > 0.1f) {
+                        float pullForce = 15.0f;
+                        playerPhys->velX = (dx / dist) * pullForce;
+                        playerPhys->velY = (dy / dist) * pullForce;
+                        playerPhys->velZ = (dz / dist) * pullForce + 5.0f; // Extra lift
+                    }
+                }
+            }
             toDestroy.push_back(entity);
             continue;
         }

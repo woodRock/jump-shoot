@@ -156,8 +156,13 @@ void Raycaster::RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map
         if (side == 1) tex->SetColorMod(150, 150, 150);
         else tex->SetColorMod(255, 255, 255);
         
-        // Cap draw to screen to avoid weird scaling issues or crashes? 
-        // SDL handles clipping usually.
+        // Distance Shading
+        Uint8 r, g, b;
+        tex->GetColorMod(&r, &g, &b);
+        float shadow = 1.0f / (1.0f + perpWallDist * perpWallDist * 0.05f);
+        if (shadow > 1.0f) shadow = 1.0f;
+        tex->SetColorMod((Uint8)(r * shadow), (Uint8)(g * shadow), (Uint8)(b * shadow));
+        
         // Render
         tex->RenderRect(x, drawStart, &srcRect, 1, drawEnd - drawStart);
     }

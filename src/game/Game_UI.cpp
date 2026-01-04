@@ -74,7 +74,7 @@ void JumpShootGame::RenderUI() {
         int bowW = 400;
         int bowH = 400;
         int bowX = w/2 - bowW/2;
-        int bowY = h - bowH + 50;
+        int bowY = h - bowH + 50 + (int)(sin(m_BobTimer) * 10);
         
         if (weapon->isDrawing) {
             bowX += (rand() % 5);
