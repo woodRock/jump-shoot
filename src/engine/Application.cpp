@@ -36,6 +36,12 @@ Application::Application(const char *title, int width, int height)
     return;
   }
 
+  // Initialize SDL_mixer
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+      std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: "
+                << Mix_GetError() << std::endl;
+  }
+
   m_Window =
       SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                        width, height, SDL_WINDOW_SHOWN);
@@ -65,6 +71,8 @@ Application::~Application() {
     SDL_DestroyRenderer(m_Renderer);
   if (m_Window)
     SDL_DestroyWindow(m_Window);
+  Mix_CloseAudio();
+  Mix_Quit();
   TTF_Quit();
   IMG_Quit();
   SDL_Quit();

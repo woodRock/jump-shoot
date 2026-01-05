@@ -58,6 +58,14 @@ struct TargetComponent {
     int points = 10;
 };
 
+struct ParticleComponent {
+    float vx, vy, vz;
+    float life;
+    float maxLife;
+    SDL_Color color;
+    float size;
+};
+
 struct WeaponComponent {
     float cooldown = 0.0f;
     float drawTime = 0.0f; // How long held

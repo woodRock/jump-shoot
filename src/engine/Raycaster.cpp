@@ -156,12 +156,20 @@ void Raycaster::RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map
         if (side == 1) tex->SetColorMod(150, 150, 150);
         else tex->SetColorMod(255, 255, 255);
         
-        // Distance Shading
+        // Distance Shading (Fog)
         Uint8 r, g, b;
         tex->GetColorMod(&r, &g, &b);
-        float shadow = 1.0f / (1.0f + perpWallDist * perpWallDist * 0.05f);
+        float shadow = 1.0f / (1.0f + perpWallDist * 0.1f); // Linear-ish fog
         if (shadow > 1.0f) shadow = 1.0f;
-        tex->SetColorMod((Uint8)(r * shadow), (Uint8)(g * shadow), (Uint8)(b * shadow));
+        if (shadow < 0.1f) shadow = 0.1f;
+        
+        // Apply fog color (mix with background color)
+        SDL_Color fogColor = {50, 50, 60, 255};
+        r = (Uint8)(r * shadow + fogColor.r * (1.0f - shadow));
+        g = (Uint8)(g * shadow + fogColor.g * (1.0f - shadow));
+        b = (Uint8)(b * shadow + fogColor.b * (1.0f - shadow));
+        
+        tex->SetColorMod(r, g, b);
         
         // Render
         tex->RenderRect(x, drawStart, &srcRect, 1, drawEnd - drawStart);
@@ -169,28 +177,39 @@ void Raycaster::RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map
 }
 
 void Raycaster::RenderSprites(SDL_Renderer* ren, const Camera& cam, const Map& map, Registry& reg) {
-    // Gather sprites
+    // Gather sprites and particles
     struct DrawableSprite {
         double dist;
         Transform3DComponent* trans;
         BillboardComponent* bill;
+        ParticleComponent* part; // Optional
     };
     
     std::vector<DrawableSprite> sprites;
-    // Iterate over one component type and check for the other
-    auto& billboards = reg.View<BillboardComponent>();
     
+    // Regular billboards
+    auto& billboards = reg.View<BillboardComponent>();
     for (auto& pair : billboards) {
         Entity entity = pair.first;
-        BillboardComponent& b = pair.second;
-        
         if (reg.HasComponent<Transform3DComponent>(entity)) {
-            Transform3DComponent* t = reg.GetComponent<Transform3DComponent>(entity);
-            
+            auto* t = reg.GetComponent<Transform3DComponent>(entity);
             double dx = t->x - cam.x;
             double dy = t->y - cam.y;
             double dist = dx*dx + dy*dy;
-            sprites.push_back({dist, t, &b});
+            sprites.push_back({dist, t, &pair.second, nullptr});
+        }
+    }
+
+    // Particles (drawn as colored squares or small textures)
+    auto& particles = reg.View<ParticleComponent>();
+    for (auto& pair : particles) {
+        Entity entity = pair.first;
+        if (reg.HasComponent<Transform3DComponent>(entity)) {
+            auto* t = reg.GetComponent<Transform3DComponent>(entity);
+            double dx = t->x - cam.x;
+            double dy = t->y - cam.y;
+            double dist = dx*dx + dy*dy;
+            sprites.push_back({dist, t, nullptr, &pair.second});
         }
     }
     
@@ -211,71 +230,68 @@ void Raycaster::RenderSprites(SDL_Renderer* ren, const Camera& cam, const Map& m
         double spriteX = s.trans->x - cam.x;
         double spriteY = s.trans->y - cam.y;
         
-        // Inverse Camera Matrix
         double invDet = 1.0 / (planeX * dirY - dirX * planeY);
         double transformX = invDet * (dirY * spriteX - dirX * spriteY);
-        double transformY = invDet * (-planeY * spriteX + planeX * spriteY); // Depth inside screen
+        double transformY = invDet * (-planeY * spriteX + planeX * spriteY); 
         
-        if (transformY <= 0.1) continue; // Behind camera or too close
+        if (transformY <= 0.1) continue; 
         
         int spriteScreenX = int((w / 2) * (1 + transformX / transformY));
         
-        // Height calculation
-        int spriteHeight = abs(int(h / transformY)) * s.bill->scale;
-        
-        // Vertical position adjust
-        // Sprites are usually on floor (z=0) or flying
-        // s.trans->z vs cam.z
-        // Standard center is horizon.
+        float scale = s.bill ? s.bill->scale : (s.part ? s.part->size * 0.05f : 1.0f);
+        int spriteHeight = abs(int(h / transformY)) * scale;
         int horizon = h / 2 + (int)cam.pitch;
-        
-        // Sprite base should be at floor...
-        // For wall: center is horizon.
-        // For sprite with z=0:
-        // shift = (s.z - cam.z + 0.5?) 
-        // Let's approximate.
-        // Move sprite down/up based on z difference
-        // If s.z = 0 (floor) and cam.z = 0.5 (eye), sprite is lower.
-        
-        // (s.trans->z - cam.z) relative height difference
-        // Projected height diff = (diff) / transformY * something
-        
-        double heightDiff = (s.trans->z - (cam.z - 0.5)); // 0 - 0 = 0 (centered?) No.
-        
+        double heightDiff = (s.trans->z - (cam.z - 0.5)); 
         int vMoveScreen = int(heightDiff * h / transformY);
         
         int drawStartY = -spriteHeight / 2 + horizon - vMoveScreen; 
         int drawEndY = spriteHeight / 2 + horizon - vMoveScreen;
         
-        int spriteWidth = abs(int(h / transformY)) * s.bill->scale; // Assuming square ratio
+        int spriteWidth = abs(int(h / transformY)) * scale;
         int drawStartX = -spriteWidth / 2 + spriteScreenX;
         int drawEndX = spriteWidth / 2 + spriteScreenX;
         
         if (drawStartX >= w || drawEndX < 0) continue;
         
-        // Clip
-        int clipStartX = drawStartX;
-        int clipEndX = drawEndX;
-        if (drawStartX < 0) clipStartX = 0;
-        if (drawEndX >= w) clipEndX = w - 1;
+        int clipStartX = std::max(0, drawStartX);
+        int clipEndX = std::min(w - 1, drawEndX);
         
-        // Render Strips
-        Texture* tex = s.bill->texture.get();
-        if (!tex) continue; // Should check valid
-        
-        tex->SetColorMod(255, 255, 255); // Reset color
-        
-        for (int stripe = clipStartX; stripe < clipEndX; stripe++) {
-            if (transformY < m_ZBuffer[stripe]) {
-                int texX = int(256 * (stripe - (-spriteWidth / 2 + spriteScreenX)) * tex->GetWidth() / spriteWidth) / 256;
-                if (texX < 0) texX = 0; 
-                if (texX >= tex->GetWidth()) texX = tex->GetWidth() - 1;
-                
-                SDL_Rect srcRect = {texX, 0, 1, tex->GetHeight()};
-                
-                // Draw
-                // We don't clip Y here, SDL does.
-                tex->RenderRect(stripe, drawStartY, &srcRect, 1, drawEndY - drawStartY);
+        // Fog for sprites
+        float shadow = 1.0f / (1.0f + transformY * 0.1f);
+        if (shadow > 1.0f) shadow = 1.0f;
+        if (shadow < 0.1f) shadow = 0.1f;
+        SDL_Color fogColor = {50, 50, 60, 255};
+
+        if (s.bill) {
+            Texture* tex = s.bill->texture.get();
+            if (!tex) continue;
+            
+            Uint8 r = 255, g = 255, b = 255;
+            r = (Uint8)(r * shadow + fogColor.r * (1.0f - shadow));
+            g = (Uint8)(g * shadow + fogColor.g * (1.0f - shadow));
+            b = (Uint8)(b * shadow + fogColor.b * (1.0f - shadow));
+            tex->SetColorMod(r, g, b);
+            
+            for (int stripe = clipStartX; stripe < clipEndX; stripe++) {
+                if (transformY < m_ZBuffer[stripe]) {
+                    int texX = int(256 * (stripe - (-spriteWidth / 2 + spriteScreenX)) * tex->GetWidth() / spriteWidth) / 256;
+                    if (texX < 0) texX = 0; 
+                    if (texX >= tex->GetWidth()) texX = tex->GetWidth() - 1;
+                    SDL_Rect srcRect = {texX, 0, 1, tex->GetHeight()};
+                    tex->RenderRect(stripe, drawStartY, &srcRect, 1, drawEndY - drawStartY);
+                }
+            }
+        } else if (s.part) {
+            SDL_Color c = s.part->color;
+            c.r = (Uint8)(c.r * shadow + fogColor.r * (1.0f - shadow));
+            c.g = (Uint8)(c.g * shadow + fogColor.g * (1.0f - shadow));
+            c.b = (Uint8)(c.b * shadow + fogColor.b * (1.0f - shadow));
+            SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
+            
+            for (int stripe = clipStartX; stripe < clipEndX; stripe++) {
+                if (transformY < m_ZBuffer[stripe]) {
+                    SDL_RenderDrawLine(ren, stripe, drawStartY, stripe, drawEndY);
+                }
             }
         }
     }

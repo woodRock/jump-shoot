@@ -20,6 +20,23 @@ struct Map {
             tiles[y * WIDTH + x] = val;
         }
     }
+
+    bool LoadFromFile(const std::string& path) {
+        FILE* f = fopen(path.c_str(), "r");
+        if (!f) return false;
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                int val;
+                if (fscanf(f, "%d", &val) != 1) {
+                    fclose(f);
+                    return false;
+                }
+                Set(x, y, val);
+            }
+        }
+        fclose(f);
+        return true;
+    }
 };
 
 }

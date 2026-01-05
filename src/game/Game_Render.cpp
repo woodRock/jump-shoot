@@ -19,18 +19,31 @@ void JumpShootGame::OnRender() {
         
         RenderMainMenu();
     } else if (m_State == GameState::Playing) {
+        int w, h;
+        SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+        
         // Apply Bobbing to Camera z temporarily for render
         Camera bobCam = *m_Camera;
         float bobOffset = sin(m_BobTimer) * 0.05f;
         bobCam.z += bobOffset;
         
-        // Wall Run tilt
-        auto* phys = m_Registry.GetComponent<PhysicsComponent>(m_PlayerEntity);
-        // We'd need a roll/tilt in Camera struct for real tilt, 
-        // but we can fake it with a small yaw/pitch offset or just leave it.
-        // Let's just do the bobbing for now.
-
         m_Raycaster.Render(m_Renderer, bobCam, m_Map, m_Registry);
+        
+        // Render Grapple Rope
+        if (m_IsGrappling) {
+            SDL_SetRenderDrawColor(m_Renderer, 150, 150, 150, 255);
+            SDL_RenderDrawLine(m_Renderer, w/2, h, w/2, h/2);
+        }
+
+        // Slow-mo Visual Cue
+        if (m_TimeScale < 1.0f) {
+            SDL_SetRenderDrawBlendMode(m_Renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(m_Renderer, 0, 100, 255, 40); // Subtle blue tint
+            SDL_Rect screenRect = {0, 0, w, h};
+            SDL_RenderFillRect(m_Renderer, &screenRect);
+            SDL_SetRenderDrawBlendMode(m_Renderer, SDL_BLENDMODE_NONE);
+        }
+
         RenderUI();
     } else if (m_State == GameState::Paused) {
         m_Raycaster.Render(m_Renderer, *m_Camera, m_Map, m_Registry);

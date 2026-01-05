@@ -60,27 +60,109 @@ void JumpShootGame::RenderPauseMenu() {
 }
 
 void JumpShootGame::RenderUI() {
+
     int w, h;
+
     SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+
     
-    // Crosshair
-    m_Crosshair->Render(w/2 - 16, h/2 - 16);
-    
-    // Bow
-    auto* weapon = m_Registry.GetComponent<WeaponComponent>(m_PlayerEntity);
-    if (weapon) {
-        Texture* bowTex = weapon->isDrawing ? m_BowDraw.get() : m_BowIdle.get();
-        
-        int bowW = 400;
-        int bowH = 400;
-        int bowX = w/2 - bowW/2;
-        int bowY = h - bowH + 50 + (int)(sin(m_BobTimer) * 10);
-        
-        if (weapon->isDrawing) {
-            bowX += (rand() % 5);
-            bowY += (rand() % 5);
+
+    // Tutorial Text
+
+    auto* t = m_Registry.GetComponent<Transform3DComponent>(m_PlayerEntity);
+
+    if (t) {
+
+        std::string tutorial = "";
+
+        if (t->x < 8) {
+
+            tutorial = "SECTION 1: ARCHERY. Hold Left Click to draw, release to fire.";
+
+        } else if (t->x >= 8 && t->x < 20 && t->y < 12) {
+
+            tutorial = "SECTION 2: PARKOUR. Jump against the mossy wall to Wall Run!";
+
+        } else if (t->x > 12 && t->y >= 12) {
+
+            tutorial = "SECTION 3: GRAPPLE. Right Click (or E+Click) a pillar to Zip!";
+
         }
+
         
-        bowTex->Render(bowX, bowY, bowW, bowH);
+
+        if (!tutorial.empty()) {
+
+            m_TextRenderer->RenderTextCentered(tutorial, w/2, 50, {255, 255, 255, 200});
+
+        }
+
     }
+
+
+
+    // Crosshair
+
+    m_Crosshair->Render(w/2 - 16, h/2 - 16);
+
+    
+
+    // Bow with Sway and Bob
+
+    auto* weapon = m_Registry.GetComponent<WeaponComponent>(m_PlayerEntity);
+
+    if (weapon) {
+
+        Texture* bowTex = weapon->isDrawing ? m_BowDraw.get() : m_BowIdle.get();
+
+        
+
+        int bowW = 400;
+
+        int bowH = 400;
+
+        
+
+        // Sway based on mouse movement would be better, but for now we use a timer
+
+        float swayX = sin(m_SwayTimer * 0.5f) * 15.0f;
+
+        float swayY = cos(m_SwayTimer) * 10.0f;
+
+        
+
+        int bowX = w/2 - bowW/2 + (int)swayX;
+
+        int bowY = h - bowH + 50 + (int)(sin(m_BobTimer) * 15) + (int)swayY;
+
+        
+
+        if (weapon->isDrawing) {
+
+            bowX += (rand() % 4);
+
+            bowY += (rand() % 4);
+
+            // Pull bow back more
+
+            bowY += 20;
+
+        }
+
+
+
+        if (m_ShakeTimer > 0) {
+
+            bowX += (int)(((rand() % 100) / 50.0f - 1.0f) * m_ShakeIntensity * 100.0f);
+
+            bowY += (int)(((rand() % 100) / 50.0f - 1.0f) * m_ShakeIntensity * 100.0f);
+
+        }
+
+        
+
+        bowTex->Render(bowX, bowY, bowW, bowH);
+
+    }
+
 }

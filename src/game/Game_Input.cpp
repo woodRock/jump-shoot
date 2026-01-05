@@ -1,6 +1,7 @@
 #include "JumpShootGame.h"
 #include "../engine/Input.h"
 #include "../engine/Components.h"
+#include "../engine/Config.h"
 #include <cmath>
 #include <SDL2/SDL.h>
 
@@ -24,55 +25,60 @@ void JumpShootGame::HandleInputGameplay(float dt) {
     // Mouse Look
     int mx, my;
     Input::GetMouseDelta(mx, my);
-    t->rot += mx * p->mouseSensitivity;
+    float sensitivity = Config::GetMouseSensitivity();
+    t->rot += mx * sensitivity;
     t->pitch -= my * 2.0f; 
     
     // Clamp pitch
     if (t->pitch > 200) t->pitch = 200;
     if (t->pitch < -200) t->pitch = -200;
     
-    // Movement
-    float moveSpeed = p->speed * dt;
-    float dx = 0, dy = 0;
+    // Movement (Acceleration)
+    float accel = (phys->isGrounded ? 50.0f : 10.0f) * dt;
+    float dvx = 0, dvy = 0;
     bool isMoving = false;
     
     if (Input::IsKeyDown(SDL_SCANCODE_W)) {
-        dx += cos(t->rot) * moveSpeed;
-        dy += sin(t->rot) * moveSpeed;
+        dvx += cos(t->rot) * accel;
+        dvy += sin(t->rot) * accel;
         isMoving = true;
     }
     if (Input::IsKeyDown(SDL_SCANCODE_S)) {
-        dx -= cos(t->rot) * moveSpeed;
-        dy -= sin(t->rot) * moveSpeed;
+        dvx -= cos(t->rot) * accel;
+        dvy -= sin(t->rot) * accel;
         isMoving = true;
     }
     if (Input::IsKeyDown(SDL_SCANCODE_A)) {
-        dx += cos(t->rot - M_PI/2) * moveSpeed;
-        dy += sin(t->rot - M_PI/2) * moveSpeed;
+        dvx += cos(t->rot - M_PI/2) * accel;
+        dvy += sin(t->rot - M_PI/2) * accel;
         isMoving = true;
     }
     if (Input::IsKeyDown(SDL_SCANCODE_D)) {
-        dx += cos(t->rot + M_PI/2) * moveSpeed;
-        dy += sin(t->rot + M_PI/2) * moveSpeed;
+        dvx += cos(t->rot + M_PI/2) * accel;
+        dvy += sin(t->rot + M_PI/2) * accel;
         isMoving = true;
     }
+
+    phys->velX += dvx;
+    phys->velY += dvy;
     
-    // Collision Check (Simple Slide)
-    if (m_Map.Get(int(t->x + dx * 2), int(t->y)) == 0) t->x += dx;
-    if (m_Map.Get(int(t->x), int(t->y + dy * 2)) == 0) t->y += dy;
-    
-    // View Bobbing logic
-    if (isMoving && phys->isGrounded) {
-        m_BobTimer += dt * 10.0f;
-    } else {
-        m_BobTimer = 0;
+    // Limit speed
+    float maxSpeed = p->speed;
+    float currentSpeed = sqrt(phys->velX*phys->velX + phys->velY*phys->velY);
+    if (currentSpeed > maxSpeed && !m_IsGrappling) {
+        phys->velX = (phys->velX / currentSpeed) * maxSpeed;
+        phys->velY = (phys->velY / currentSpeed) * maxSpeed;
     }
+    
+    // View Bobbing logic handled in OnUpdate based on velocity
 
     // Jump
-    if (Input::IsKeyDown(SDL_SCANCODE_SPACE) && (phys->isGrounded || phys->isWallRunning)) {
+    if (Input::IsKeyDown(SDL_SCANCODE_SPACE) && (phys->isGrounded || phys->isWallRunning || m_IsGrappling)) {
         phys->velZ = p->jumpForce;
         phys->isGrounded = false;
         phys->isWallRunning = false;
+        m_IsGrappling = false; // Cancel grapple
+        if (m_SfxJump) Mix_PlayChannel(-1, m_SfxJump, 0);
     }
     
     // Shooting
@@ -89,6 +95,7 @@ void JumpShootGame::HandleInputGameplay(float dt) {
         }
     } else if (wantsGrapple && weapon->cooldown <= 0) {
         // Grapple!
+        if (m_SfxGrapple) Mix_PlayChannel(-1, m_SfxGrapple, 0);
         auto arrow = m_Registry.CreateEntity();
         float ax = t->x + cos(t->rot) * 0.5f;
         float ay = t->y + sin(t->rot) * 0.5f;
@@ -102,6 +109,7 @@ void JumpShootGame::HandleInputGameplay(float dt) {
             // Fire Arrow
             weapon->isDrawing = false;
             weapon->cooldown = 0.5f;
+            if (m_SfxShoot) Mix_PlayChannel(-1, m_SfxShoot, 0);
             
             auto arrow = m_Registry.CreateEntity();
             float ax = t->x + cos(t->rot) * 0.5f;

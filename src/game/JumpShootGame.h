@@ -53,6 +53,13 @@ private:
     std::shared_ptr<PixelsEngine::Texture> m_BowDraw;
     std::shared_ptr<PixelsEngine::Texture> m_Crosshair;
     
+    // Sounds
+    Mix_Chunk* m_SfxShoot = nullptr;
+    Mix_Chunk* m_SfxHit = nullptr;
+    Mix_Chunk* m_SfxJump = nullptr;
+    Mix_Chunk* m_SfxGrapple = nullptr;
+    Mix_Music* m_Ambience = nullptr;
+    
     PixelsEngine::Entity m_PlayerEntity;
     
     GameState m_State = GameState::MainMenu;
@@ -62,4 +69,15 @@ private:
     float m_MenuCamAngle = 0.0f;
     float m_TimeScale = 1.0f;
     float m_BobTimer = 0.0f;
+    float m_SwayTimer = 0.0f;
+    
+    // Screenshake
+    float m_ShakeIntensity = 0.0f;
+    float m_ShakeTimer = 0.0f;
+    
+    bool m_IsGrappling = false;
+    struct { float x, y, z; } m_GrapplePoint;
+
+    // Spatial Audio Helper
+    void PlaySpatialSfx(Mix_Chunk* chunk, float x, float y, float z);
 };

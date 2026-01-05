@@ -93,8 +93,12 @@ public:
     }
   }
 
+  static float GetMouseSensitivity() { return m_MouseSensitivity; }
+  static void SetMouseSensitivity(float s) { m_MouseSensitivity = s; }
+
 private:
   static std::unordered_map<GameAction, SDL_Scancode> m_Keybinds;
+  static float m_MouseSensitivity;
 };
 
 } // namespace PixelsEngine
