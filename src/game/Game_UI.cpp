@@ -89,14 +89,19 @@ void JumpShootGame::RenderUI() {
   auto *t = m_Registry.GetComponent<Transform3DComponent>(m_PlayerEntity);
   if (t) {
     std::string tutorial = "";
-    if (t->x < 8)
-      tutorial =
-          "SECTION 1: ARCHERY. Hold Left Click to draw, release to fire.";
-    else if (t->x >= 8 && t->x < 20 && t->y < 12)
-      tutorial = "SECTION 2: PARKOUR. Jump against the mossy wall to Wall Run!";
-    else if (t->x > 12 && t->y >= 12)
-      tutorial =
-          "SECTION 3: GRAPPLE. Right Click (or E+Click) a pillar to Zip!";
+    if (m_CurrentLevel == 1) {
+        if (t->x < 8)
+          tutorial = "SECTION 1: ARCHERY. Hold Left Click to draw, release to fire.";
+        else if (t->x >= 8 && t->x < 20 && t->y < 12)
+          tutorial = "SECTION 2: PARKOUR. Jump against the mossy wall to Wall Run!";
+        else if (t->x > 12 && t->y >= 12)
+          tutorial = "SECTION 3: GRAPPLE. Right Click (or E+Click) a pillar to Zip!";
+    } else if (m_CurrentLevel == 2) {
+        tutorial = "LEVEL 2: Wall Run over the Lava to find the hidden target!";
+    } else if (m_CurrentLevel == 3) {
+        tutorial = "LEVEL 3: GRAPPLE GAUNTLET. Zip between pillars to cross the pit!";
+    }
+
     if (!tutorial.empty())
       m_TextRenderer->RenderTextWrappedCentered(tutorial, w / 2, 50, 600,
                                                 {255, 255, 255, 200});

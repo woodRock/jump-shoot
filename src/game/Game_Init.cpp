@@ -57,6 +57,7 @@ void JumpShootGame::InitGame() {
 
   std::string mapPath = "assets/level1.map";
   if (m_CurrentLevel == 2) mapPath = "assets/level2.map";
+  if (m_CurrentLevel == 3) mapPath = "assets/level3.map";
 
   if (!m_Map.LoadFromFile(mapPath)) {
     // Fallback generation (only useful for level 1 really)
@@ -69,6 +70,8 @@ void JumpShootGame::InitGame() {
   m_PlayerEntity = m_Registry.CreateEntity();
   if (m_CurrentLevel == 2) {
       m_Registry.AddComponent<Transform3DComponent>(m_PlayerEntity, {3.0f, 8.0f, 0.5f, 0.0f, 0.0f});
+  } else if (m_CurrentLevel == 3) {
+      m_Registry.AddComponent<Transform3DComponent>(m_PlayerEntity, {12.0f, 2.0f, 0.5f, 0.0f, 0.0f});
   } else {
       m_Registry.AddComponent<Transform3DComponent>(m_PlayerEntity, {2.0f, 2.0f, 0.5f, 0.0f, 0.0f});
   }
@@ -79,7 +82,9 @@ void JumpShootGame::InitGame() {
   m_Registry.AddComponent<WeaponComponent>(m_PlayerEntity, {0.0f, 0.0f, false});
 
   m_Camera->x = 2.0f; 
-  m_Camera->y = (m_CurrentLevel == 2) ? 8.0f : 2.0f; 
+  if (m_CurrentLevel == 2) m_Camera->y = 8.0f;
+  else if (m_CurrentLevel == 3) { m_Camera->x = 12.0f; m_Camera->y = 2.0f; }
+  else m_Camera->y = 2.0f;
   m_Camera->z = 0.5f;
 
   auto targetTex = TextureManager::LoadTexture(m_Renderer, "assets/target.png");
@@ -92,6 +97,20 @@ void JumpShootGame::InitGame() {
       m_Registry.AddComponent<BillboardComponent>(t1, {targetTex, 1.0f, 0.5f, 0.5f, true});
       m_Registry.AddComponent<ColliderComponent>(t1, {0.4f, 1.0f, true});
       m_Registry.AddComponent<TargetComponent>(t1, {false, 100});
+  } else if (m_CurrentLevel == 3) {
+      // Level 3 Targets
+      auto t1 = m_Registry.CreateEntity();
+      m_Registry.AddComponent<Transform3DComponent>(t1, {12.0f, 22.0f, 1.0f, 0.0f, 0.0f});
+      m_Registry.AddComponent<BillboardComponent>(t1, {targetTex, 1.0f, 0.5f, 0.5f, true});
+      m_Registry.AddComponent<ColliderComponent>(t1, {0.4f, 1.0f, true});
+      m_Registry.AddComponent<TargetComponent>(t1, {false, 50});
+      
+      // // Bonus target
+      // auto t2 = m_Registry.CreateEntity();
+      // m_Registry.AddComponent<Transform3DComponent>(t2, {16.0f, 14.0f, 2.0f, 0.0f, 0.0f});
+      // m_Registry.AddComponent<BillboardComponent>(t2, {targetTex, 0.8f, 0.5f, 0.5f, true});
+      // m_Registry.AddComponent<ColliderComponent>(t2, {0.4f, 1.0f, true});
+      // m_Registry.AddComponent<TargetComponent>(t2, {false, 25});
   } else {
       // Level 1 Targets
       auto t1 = m_Registry.CreateEntity();

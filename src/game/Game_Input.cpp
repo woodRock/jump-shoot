@@ -13,7 +13,7 @@ void JumpShootGame::HandleInputGameplay(float dt) {
       if (Input::IsKeyPressed(SDL_SCANCODE_SPACE)) {
           // Next Level
           m_CurrentLevel++;
-          if (m_CurrentLevel > 2) m_CurrentLevel = 1; // Loop back or end game
+          if (m_CurrentLevel > 3) m_CurrentLevel = 1; // Loop back or end game
           InitGame();
           return;
       }

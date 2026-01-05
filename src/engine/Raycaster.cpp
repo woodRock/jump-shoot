@@ -34,20 +34,24 @@ void Raycaster::Render(SDL_Renderer *ren, const Camera &cam, const Map &map,
     m_ZBuffer.resize(w);
   }
 
-  // 1. Procedural Parallax Sky
-  // Draw sky gradient that shifts with camera yaw
+  // 1. Procedural Parallax Sky (Daytime)
   float skyOffset = (cam.yaw / (2.0f * M_PI)) * w * 2.0f;
   for (int x = 0; x < w; x++) {
-    // Simple star/cloud pattern based on x and offset
     int pixelX = (x + (int)skyOffset) % w;
     float grad = (float)pixelX / w;
 
-    // Sky Top
-    SDL_SetRenderDrawColor(ren, 20, 30, 60, 255); // Deep midnight blue
+    // Sky Gradient (Cyan to Blue)
+    SDL_SetRenderDrawColor(ren, 135, 206, 235, 255); // Sky Blue
     SDL_RenderDrawLine(ren, x, 0, x, h / 2 + (int)cam.pitch);
 
-    // Horizon glow
-    SDL_SetRenderDrawColor(ren, 60, 80, 120, 255);
+    // Simple Sun (Fixed direction)
+    float sunDir = 1.0f; // Approx angle
+    float angle = atan2(sin(cam.yaw), cos(cam.yaw)); // Current yaw -PI to PI
+    // Mapping is complex, simplified: just draw a fixed sun in skybox texture logic
+    // Or just a bright gradient at top
+    // Let's stick to gradient for now, maybe add a circle later if needed.
+    // Horizon glow (White)
+    SDL_SetRenderDrawColor(ren, 200, 220, 255, 255);
     SDL_RenderDrawPoint(ren, x, h / 2 + (int)cam.pitch);
   }
 
@@ -61,7 +65,10 @@ void Raycaster::Render(SDL_Renderer *ren, const Camera &cam, const Map &map,
   double planeY = 0.66 * dirX;
 
   for (int y = h / 2 + (int)cam.pitch + 1; y < h; y++) {
-    float rowDist = (0.5f * h) / (y - h / 2 - (int)cam.pitch);
+    float rowDist = (cam.z * h) / (y - h / 2 - (int)cam.pitch);
+    // Abyss depth (Ground is at -20.0, camera at cam.z)
+    float abyssDist = ((cam.z + 20.0f) * h) / (y - h / 2 - (int)cam.pitch);
+    
     double rayDirX0 = dirX - planeX;
     double rayDirY0 = dirY - planeY;
     double rayDirX1 = dirX + planeX;
@@ -77,23 +84,43 @@ void Raycaster::Render(SDL_Renderer *ren, const Camera &cam, const Map &map,
       int cellY = (int)(floorY);
       int tile = map.Get(cellX, cellY);
 
-      Uint8 r = 30, g = 50, b = 30; // Default floor
-      if (tile == 3) {
-        r = 0;
-        g = 200;
-        b = 200;
-      } else if (tile == 4) {
-        r = 200;
-        g = 50;
-        b = 0;
+      if (tile == 4) {
+          // Abyss Rendering (Parallax)
+          // Calculate deep floor position
+          // We need ray direction for this pixel
+          double cameraX = 2 * x / (double)w - 1;
+          double rayDirX = dirX + planeX * cameraX;
+          double rayDirY = dirY + planeY * cameraX;
+          
+          double deepX = cam.x + abyssDist * rayDirX;
+          double deepY = cam.y + abyssDist * rayDirY;
+          
+          // Checkerboard pattern for "streets" below
+          int streetX = (int)(deepX);
+          int streetY = (int)(deepY);
+          bool dark = (streetX + streetY) % 2 == 0;
+          
+          Uint8 r = 30, g = 30, b = 35;
+          if (dark) { r = 20; g = 20; b = 25; }
+          
+          // Abyss Shadow (Darker as it goes down? Actually uniform darkness implies depth here)
+          SDL_SetRenderDrawColor(ren, r, g, b, 255);
+          SDL_RenderDrawPoint(ren, x, y);
+      } else {
+          Uint8 r = 100, g = 100, b = 110; // Concrete Gray (Rooftop)
+          if (tile == 3) {
+            r = 0;
+            g = 200;
+            b = 200; // Jump Pad
+          } 
+    
+          float shadow = (float)(y - (h / 2 + (int)cam.pitch)) / (h / 2);
+          shadow *= pulse;
+    
+          SDL_SetRenderDrawColor(ren, (Uint8)(r * shadow), (Uint8)(g * shadow),
+                                 (Uint8)(b * shadow), 255);
+          SDL_RenderDrawPoint(ren, x, y);
       }
-
-      float shadow = (float)(y - (h / 2 + (int)cam.pitch)) / (h / 2);
-      shadow *= pulse;
-
-      SDL_SetRenderDrawColor(ren, (Uint8)(r * shadow), (Uint8)(g * shadow),
-                             (Uint8)(b * shadow), 255);
-      SDL_RenderDrawPoint(ren, x, y);
 
       floorX += floorStepX;
       floorY += floorStepY;
@@ -233,7 +260,7 @@ void Raycaster::RenderWalls(SDL_Renderer *ren, const Camera &cam,
     tex->GetColorMod(&r, &g, &b);
     float shadow = 1.0f / (1.0f + perpWallDist * 0.1f);
     shadow = std::max(0.1f, std::min(1.0f, shadow));
-    SDL_Color fogColor = {50, 50, 60, 255};
+    SDL_Color fogColor = {180, 200, 220, 255};
     r = (Uint8)(r * shadow + fogColor.r * (1.0f - shadow));
     g = (Uint8)(g * shadow + fogColor.g * (1.0f - shadow));
     b = (Uint8)(b * shadow + fogColor.b * (1.0f - shadow));
@@ -323,7 +350,7 @@ void Raycaster::RenderSprites(SDL_Renderer *ren, const Camera &cam,
 
     float shadow = 1.0f / (1.0f + transformY * 0.1f);
     shadow = std::max(0.1f, std::min(1.0f, shadow));
-    SDL_Color fogColor = {20, 30, 60, 255}; // Match midnight blue sky
+    SDL_Color fogColor = {180, 200, 220, 255}; // Match daylight sky
     if (s.bill) {
       Texture *tex = s.bill->texture.get();
       if (!tex)

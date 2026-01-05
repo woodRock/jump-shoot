@@ -158,100 +158,75 @@ void JumpShootGame::UpdatePhysics(float dt) {
     // Floor collision & Jump Pads & Lava
 
     if (t->z < eyeHeight) {
-
-      if (phys->velZ < -5.0f) {
-
-        m_ShakeTimer = 0.2f;
-
-        m_ShakeIntensity = std::min(0.2f, abs(phys->velZ) * 0.02f);
-
-        // Landing Particles
-
-        for (int i = 0; i < 8; i++) {
-
-          auto p = m_Registry.CreateEntity();
-
-          m_Registry.AddComponent<Transform3DComponent>(
-              p, {t->x, t->y, eyeHeight, 0, 0});
-
-          m_Registry.AddComponent<ParticleComponent>(
-              p, {
-
-                     ((rand() % 100) / 50.0f - 1.0f) * 2.0f,
-
-                     ((rand() % 100) / 50.0f - 1.0f) * 2.0f,
-
-                     ((rand() % 100) / 100.0f) * 2.0f,
-
-                     0.3f,
-                     0.5f,
-                     {200, 200, 200, 255},
-                     1.5f
-
-                 });
-        }
-      }
-
       int tile = m_Map.Get((int)t->x, (int)t->y);
 
-      if (tile == 3) { // Jump Pad
+      // Gap (Tile 4) - Fall through
+      if (tile == 4) {
+          phys->isGrounded = false;
+      }
+      else {
+          if (phys->velZ < -5.0f) {
+            m_ShakeTimer = 0.2f;
+            m_ShakeIntensity = std::min(0.2f, abs(phys->velZ) * 0.02f);
+            // Landing Particles
+            for (int i = 0; i < 8; i++) {
+              auto p = m_Registry.CreateEntity();
+              m_Registry.AddComponent<Transform3DComponent>(
+                  p, {t->x, t->y, eyeHeight, 0, 0});
+              m_Registry.AddComponent<ParticleComponent>(
+                  p, {
+                         ((rand() % 100) / 50.0f - 1.0f) * 2.0f,
+                         ((rand() % 100) / 50.0f - 1.0f) * 2.0f,
+                         ((rand() % 100) / 100.0f) * 2.0f,
+                         0.3f,
+                         0.5f,
+                         {200, 200, 200, 255},
+                         1.5f
+                     });
+            }
+          }
 
-        phys->velZ = 12.0f;
-
-        phys->isGrounded = false;
-
-        if (m_SfxJump)
-          Mix_PlayChannel(-1, m_SfxJump, 0);
-
-      } else if (tile == 4) { // Lava
-
-        auto *ctrl =
-            m_Registry.GetComponent<PlayerControlComponent>(m_PlayerEntity);
-
-        t->x = ctrl->spawnX;
-        t->y = ctrl->spawnY;
-        t->z = ctrl->spawnZ;
-
-        phys->velX = 0;
-        phys->velY = 0;
-        phys->velZ = 0;
-
-        m_ShakeTimer = 0.5f;
-        m_ShakeIntensity = 0.2f;
-
-        if (m_SfxHit)
-          Mix_PlayChannel(-1, m_SfxHit, 0);
-
-      } else {
-
-        t->z = eyeHeight;
-
-        phys->velZ = 0;
-
-        if (!phys->isGrounded) {
-
-          if (m_SfxJump)
-            Mix_PlayChannel(-1, m_SfxJump, 0);
-        }
-
-        phys->isGrounded = true;
-
-        // Save Checkpoint if on normal floor
-
-        if (tile == 0) {
-
-          auto *ctrl =
-              m_Registry.GetComponent<PlayerControlComponent>(m_PlayerEntity);
-
-          ctrl->spawnX = t->x;
-          ctrl->spawnY = t->y;
-          ctrl->spawnZ = t->z;
-        }
+          if (tile == 3) { // Jump Pad
+            phys->velZ = 12.0f;
+            phys->isGrounded = false;
+            if (m_SfxJump)
+              Mix_PlayChannel(-1, m_SfxJump, 0);
+          } else {
+            t->z = eyeHeight;
+            phys->velZ = 0;
+            if (!phys->isGrounded) {
+              if (m_SfxJump)
+                Mix_PlayChannel(-1, m_SfxJump, 0);
+            }
+            phys->isGrounded = true;
+            // Save Checkpoint if on normal floor
+            if (tile == 0) {
+              auto *ctrl =
+                  m_Registry.GetComponent<PlayerControlComponent>(m_PlayerEntity);
+              ctrl->spawnX = t->x;
+              ctrl->spawnY = t->y;
+              ctrl->spawnZ = t->z;
+            }
+          }
       }
 
     } else if (t->z > eyeHeight) {
 
       phys->isGrounded = false;
+    }
+
+    // Kill Plane Check
+    if (t->z < -20.0f) {
+        auto *ctrl = m_Registry.GetComponent<PlayerControlComponent>(m_PlayerEntity);
+        t->x = ctrl->spawnX;
+        t->y = ctrl->spawnY;
+        t->z = ctrl->spawnZ;
+        phys->velX = 0;
+        phys->velY = 0;
+        phys->velZ = 0;
+        phys->isGrounded = true; 
+        m_IsGrappling = false;
+        if (m_SfxHit) Mix_PlayChannel(-1, m_SfxHit, 0);
     }
 
     // Horizontal velocity (Axis-Separate for sliding)
@@ -321,68 +296,13 @@ void JumpShootGame::UpdateProjectiles(float dt) {
     p->lifeTime -= dt;
 
     bool hitWall = m_Map.Get(int(t->x), int(t->y)) > 0;
-
     bool hitFloor = t->z < 0;
 
-    if (p->lifeTime <= 0 || hitFloor || hitWall) {
-
-      if (hitWall || hitFloor) {
-
-        PlaySpatialSfx(m_SfxHit, t->x, t->y, t->z);
-
-        // Spawn fragments
-
-        for (int i = 0; i < 5; i++) {
-
-          auto frag = m_Registry.CreateEntity();
-
-          m_Registry.AddComponent<Transform3DComponent>(
-              frag, {t->x, t->y, t->z, 0, 0});
-
-          m_Registry.AddComponent<ParticleComponent>(
-              frag, {
-
-                        ((rand() % 100) / 50.0f - 1.0f) * 2.0f,
-
-                        ((rand() % 100) / 50.0f - 1.0f) * 2.0f,
-
-                        ((rand() % 100) / 100.0f) * 5.0f,
-
-                        0.5f + (rand() % 100) / 100.0f,
-                        1.0f,
-                        {200, 150, 100, 255},
-                        2.0f
-
-                    });
-        }
-
-        if (p->type == ProjectileComponent::Grapple) {
-
-          m_IsGrappling = true;
-
-          m_GrapplePoint = {t->x, t->y, t->z};
-
-          m_ShakeTimer = 0.15f;
-
-          m_ShakeIntensity = 0.05f;
-        }
-      }
-
-      toDestroy.push_back(entity);
-
-      continue;
-    }
-
-    // Target Collision
-
+    // Target Collision (Check BEFORE wall collision so we can hit targets on walls/pillars)
     auto &targets = m_Registry.View<TargetComponent>();
-
-    bool hit = false;
-
+    bool hitTarget = false;
     for (auto &tPair : targets) {
-
       Entity targetEnt = tPair.first;
-
       auto *tcomp = &tPair.second;
 
       if (!m_Registry.HasComponent<Transform3DComponent>(targetEnt) ||
@@ -390,70 +310,75 @@ void JumpShootGame::UpdateProjectiles(float dt) {
         continue;
 
       auto *tt = m_Registry.GetComponent<Transform3DComponent>(targetEnt);
-
       auto *tc = m_Registry.GetComponent<ColliderComponent>(targetEnt);
 
       if (tcomp->isDestroyed)
         continue;
 
       float dist = sqrt(pow(t->x - tt->x, 2) + pow(t->y - tt->y, 2));
-
       if (dist < tc->radius && t->z < tt->z + 0.5f && t->z > tt->z - 0.5f) {
-
         // Hit
-
         tcomp->isDestroyed = true;
-
         m_TargetsDestroyed++;
-
         m_HitmarkerTimer = 0.15f;
 
         PlaySpatialSfx(m_SfxHit, tt->x, tt->y, tt->z);
 
         m_ShakeTimer = 0.3f;
-
         m_ShakeIntensity = 0.1f;
 
         auto *bill = m_Registry.GetComponent<BillboardComponent>(targetEnt);
-
         if (bill)
-          bill->texture = TextureManager::LoadTexture(
-              m_Renderer, "assets/target_broken.png");
+          bill->texture = TextureManager::LoadTexture(m_Renderer,
+                                                      "assets/target_broken.png");
 
         // Target explosion particles
-
         for (int i = 0; i < 15; i++) {
-
           auto frag = m_Registry.CreateEntity();
-
           m_Registry.AddComponent<Transform3DComponent>(
               frag, {tt->x, tt->y, tt->z + 0.2f, 0, 0});
-
           m_Registry.AddComponent<ParticleComponent>(
-              frag, {
-
-                        ((rand() % 100) / 50.0f - 1.0f) * 5.0f,
-
-                        ((rand() % 100) / 50.0f - 1.0f) * 5.0f,
-
-                        ((rand() % 100) / 50.0f) * 4.0f,
-
-                        1.0f,
-                        1.0f,
-                        {255, 0, 0, 255},
-                        3.0f
-
-                    });
+              frag, {((rand() % 100) / 50.0f - 1.0f) * 5.0f,
+                     ((rand() % 100) / 50.0f - 1.0f) * 5.0f,
+                     ((rand() % 100) / 50.0f) * 4.0f, 1.0f, 1.0f,
+                     {255, 0, 0, 255}, 3.0f});
         }
 
-        hit = true;
-
+        hitTarget = true;
         break;
       }
     }
 
-    if (hit)
+    if (hitTarget) {
+        toDestroy.push_back(entity);
+        continue;
+    }
+
+    if (p->lifeTime <= 0 || hitFloor || hitWall) {
+      if (hitWall || hitFloor) {
+        PlaySpatialSfx(m_SfxHit, t->x, t->y, t->z);
+        // Spawn fragments
+        for (int i = 0; i < 5; i++) {
+          auto frag = m_Registry.CreateEntity();
+          m_Registry.AddComponent<Transform3DComponent>(
+              frag, {t->x, t->y, t->z, 0, 0});
+          m_Registry.AddComponent<ParticleComponent>(
+              frag, {((rand() % 100) / 50.0f - 1.0f) * 2.0f,
+                     ((rand() % 100) / 50.0f - 1.0f) * 2.0f,
+                     ((rand() % 100) / 100.0f) * 5.0f,
+                     0.5f + (rand() % 100) / 100.0f, 1.0f,
+                     {200, 150, 100, 255}, 2.0f});
+        }
+        if (p->type == ProjectileComponent::Grapple) {
+          m_IsGrappling = true;
+          m_GrapplePoint = {t->x, t->y, t->z};
+          m_ShakeTimer = 0.15f;
+          m_ShakeIntensity = 0.05f;
+        }
+      }
       toDestroy.push_back(entity);
+      continue;
+    }
   }
 
   for (auto e : toDestroy) {
