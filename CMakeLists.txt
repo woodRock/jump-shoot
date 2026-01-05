@@ -37,9 +37,12 @@ else()
     target_include_directories(JumpShoot PRIVATE ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS} ${SDL2_MIXER_INCLUDE_DIRS})
     target_link_libraries(JumpShoot PRIVATE ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${SDL2_TTF_LIBRARIES} ${SDL2_MIXER_LIBRARIES})
 
-    # Copy assets directory to the build directory
-    add_custom_command(TARGET JumpShoot POST_BUILD
+    # Create a custom target to sync assets every time we build
+    add_custom_target(sync_assets ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets
-        ${CMAKE_BINARY_DIR}/assets)
+        ${CMAKE_BINARY_DIR}/assets
+        COMMENT "Syncing assets to build directory...")
+    
+    add_dependencies(JumpShoot sync_assets)
 endif()
