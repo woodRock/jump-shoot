@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <vector>
+#include <string>
 #include <map>
 #include <memory>
 #include "Camera.h"
