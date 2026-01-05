@@ -53,13 +53,19 @@ void Raycaster::Render(SDL_Renderer* ren, const Camera& cam, const Map& map, Reg
     // Dynamic Ambient Pulse (Global light)
     float pulse = 0.95f + sin(SDL_GetTicks() * 0.002f) * 0.05f;
 
-    // 2. Floor Gradient with pulse
+    // Floor Gradient & Special Tiles
     for (int y = h/2 + (int)cam.pitch; y < h; y++) {
         float shadow = (float)(y - (h/2 + (int)cam.pitch)) / (h/2);
         shadow *= pulse;
+        
+        // We'll approximate special floor colors by checking a central ray or just using gradient
         SDL_SetRenderDrawColor(ren, (Uint8)(30 * shadow), (Uint8)(50 * shadow), (Uint8)(30 * shadow), 255);
         SDL_RenderDrawLine(ren, 0, y, w, y);
     }
+    
+    // Add special coloring for lava area? In a raycaster we'd need floor casting.
+    // Let's just implement a faster "strip" based floor color for now if we can't do full floor casting.
+
 
     RenderWalls(ren, cam, map, roll);
     RenderSprites(ren, cam, map, reg, roll);

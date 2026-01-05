@@ -81,6 +81,30 @@ void JumpShootGame::RenderUI() {
             bowY += (int)(((rand() % 100) / 50.0f - 1.0f) * m_ShakeIntensity * 100.0f);
         }
         bowTex->Render(bowX, bowY, bowW, bowH);
+
+        // Draw Power Bar
+        if (weapon->isDrawing) {
+            float power = std::min(1.0f, weapon->drawTime);
+            int barW = 200;
+            int barH = 12;
+            int barX = w/2 - barW/2;
+            int barY = h/2 + 40;
+
+            // Background
+            SDL_Rect bg = {barX, barY, barW, barH};
+            SDL_SetRenderDrawColor(m_Renderer, 50, 50, 50, 180);
+            SDL_RenderFillRect(m_Renderer, &bg);
+
+            // Fill
+            SDL_Rect fill = {barX + 2, barY + 2, (int)((barW - 4) * power), barH - 4};
+            // Color shifts from yellow to red as power increases
+            SDL_SetRenderDrawColor(m_Renderer, (Uint8)(150 + 105 * power), (Uint8)(255 * (1.0f - power)), 50, 255);
+            SDL_RenderFillRect(m_Renderer, &fill);
+            
+            // Border
+            SDL_SetRenderDrawColor(m_Renderer, 255, 255, 255, 255);
+            SDL_RenderDrawRect(m_Renderer, &bg);
+        }
     }
 
     if (m_HitmarkerTimer > 0) {

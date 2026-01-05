@@ -44,7 +44,9 @@ void JumpShootGame::HandleInputGameplay(float dt) {
     if (t->pitch < -200) t->pitch = -200;
     
     // Movement (Acceleration)
-    float accel = (phys->isGrounded ? 50.0f : 10.0f) * dt;
+    float accel = (phys->isGrounded ? 50.0f : 15.0f) * dt; // More air control
+    if (phys->isSliding) accel *= 0.2f; // Less control while sliding
+    
     float dvx = 0, dvy = 0;
     bool isMoving = false;
     
@@ -72,23 +74,47 @@ void JumpShootGame::HandleInputGameplay(float dt) {
     phys->velX += dvx;
     phys->velY += dvy;
     
-    // Limit speed
-    float maxSpeed = p->speed;
+    // Crouch & Slide
+    bool wantsCrouch = Input::IsKeyDown(SDL_SCANCODE_LCTRL) || Input::IsKeyDown(SDL_SCANCODE_C);
+    if (wantsCrouch && phys->isGrounded && !phys->isSliding) {
+        float speed = sqrt(phys->velX*phys->velX + phys->velY*phys->velY);
+        if (speed > 4.0f) {
+            phys->isSliding = true;
+            phys->slideTimer = 1.0f;
+            // Boost initial slide speed
+            phys->velX *= 1.5f;
+            phys->velY *= 1.5f;
+        }
+    }
+    if (!wantsCrouch) phys->isSliding = false;
+
+    // Limit speed (higher limit while sliding or grappling)
+    float maxSpeed = phys->isSliding ? p->speed * 2.0f : p->speed;
     float currentSpeed = sqrt(phys->velX*phys->velX + phys->velY*phys->velY);
-    if (currentSpeed > maxSpeed && !m_IsGrappling) {
+    if (currentSpeed > maxSpeed && !m_IsGrappling && !phys->isSliding) {
         phys->velX = (phys->velX / currentSpeed) * maxSpeed;
         phys->velY = (phys->velY / currentSpeed) * maxSpeed;
     }
     
-    // View Bobbing logic handled in OnUpdate based on velocity
+    // Jump & Double Jump
+    if (Input::IsKeyPressed(SDL_SCANCODE_SPACE)) {
+        bool canJump = phys->isGrounded || phys->isWallRunning || m_IsGrappling;
+        bool canDouble = !canJump && phys->doubleJumpCount < phys->maxDoubleJumps;
 
-    // Jump
-    if (Input::IsKeyDown(SDL_SCANCODE_SPACE) && (phys->isGrounded || phys->isWallRunning || m_IsGrappling)) {
-        phys->velZ = p->jumpForce;
-        phys->isGrounded = false;
-        phys->isWallRunning = false;
-        m_IsGrappling = false; // Cancel grapple
-        if (m_SfxJump) Mix_PlayChannel(-1, m_SfxJump, 0);
+        if (canJump || canDouble) {
+            phys->velZ = p->jumpForce;
+            if (canDouble) {
+                phys->doubleJumpCount++;
+                // Visual/Audio kick for double jump
+                m_ShakeTimer = 0.1f;
+                m_ShakeIntensity = 0.05f;
+            }
+            phys->isGrounded = false;
+            phys->isWallRunning = false;
+            phys->isSliding = false;
+            m_IsGrappling = false;
+            if (m_SfxJump) Mix_PlayChannel(-1, m_SfxJump, 0);
+        }
     }
     
     // Shooting
@@ -117,10 +143,16 @@ void JumpShootGame::HandleInputGameplay(float dt) {
     } else {
         if (weapon->isDrawing) {
             // Fire Arrow
+            float power = std::min(1.0f, weapon->drawTime); // Max power at 1 second
             weapon->isDrawing = false;
             weapon->cooldown = 0.5f;
             if (m_SfxShoot) Mix_PlayChannel(-1, m_SfxShoot, 0);
             
+            // Recoil based on power
+            t->pitch += 10.0f + (power * 20.0f);
+            m_ShakeTimer = 0.1f + (power * 0.1f);
+            m_ShakeIntensity = 0.04f + (power * 0.06f);
+
             auto arrow = m_Registry.CreateEntity();
             float ax = t->x + cos(t->rot) * 0.5f;
             float ay = t->y + sin(t->rot) * 0.5f;
@@ -128,8 +160,14 @@ void JumpShootGame::HandleInputGameplay(float dt) {
             m_Registry.AddComponent<Transform3DComponent>(arrow, {ax, ay, t->z, t->rot, t->pitch});
             m_Registry.AddComponent<ProjectileComponent>(arrow, {ProjectileComponent::Arrow, 50.0f, true, 5.0f});
             
-            float speed = 20.0f * (0.5f + weapon->drawTime); 
-            float vz = t->pitch * 0.05f; 
+            // Toned down speed (Min 8, Max 25)
+            float speed = 8.0f + (power * 17.0f); 
+            
+            // Vertical Bias: 
+            // At low power, the arrow has a downward bias relative to aim.
+            // At high power, it has an upward boost.
+            float verticalBias = -1.5f + (power * 3.5f); 
+            float vz = (t->pitch * 0.03f) + verticalBias;
             
             m_Registry.AddComponent<PhysicsComponent>(arrow, {cos(t->rot)*speed, sin(t->rot)*speed, vz, 15.0f, false, false, 0.0f, 0.0f});
             m_Registry.AddComponent<BillboardComponent>(arrow, {m_BowIdle, 0.2f, 0.2f, 0.2f, true}); 

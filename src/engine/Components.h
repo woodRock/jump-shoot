@@ -31,6 +31,23 @@ struct PhysicsComponent {
   bool isWallRunning = false;
   float wallRunTimer = 0.0f;
   float friction = 5.0f;
+  
+  // New Movement Tech
+  bool isSliding = false;
+  float slideTimer = 0.0f;
+  int doubleJumpCount = 0;
+  int maxDoubleJumps = 1;
+};
+
+struct PlayerControlComponent {
+  float speed = 5.0f;
+  float mouseSensitivity = 0.003f;
+  float jumpForce = 6.0f;
+  
+  // Checkpoint
+  float spawnX = 2.0f;
+  float spawnY = 2.0f;
+  float spawnZ = 0.5f;
 };
 
 struct ColliderComponent {
@@ -45,12 +62,6 @@ struct ProjectileComponent {
   float damage = 10.0f;
   bool active = true;
   float lifeTime = 5.0f;
-};
-
-struct PlayerControlComponent {
-  float speed = 5.0f;
-  float mouseSensitivity = 0.003f;
-  float jumpForce = 6.0f;
 };
 
 struct TargetComponent {
