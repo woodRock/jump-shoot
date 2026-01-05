@@ -66,6 +66,14 @@ private:
     int m_MenuSelection = 0; // 0: Play/Resume, 1: Options, 2: Quit/MainMenu
     bool m_InOptions = false;
     
+    // Gameplay Stats & Juice
+    float m_HitmarkerTimer = 0.0f;
+    float m_CameraRoll = 0.0f; // Degrees
+    float m_RunTimer = 0.0f;
+    bool m_GameFinished = false;
+    int m_TargetsDestroyed = 0;
+    int m_TotalTargets = 0;
+    
     // Main Menu Camera Props
     float m_MenuCamAngle = 0.0f;
     float m_TimeScale = 1.0f;

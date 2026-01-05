@@ -19,11 +19,11 @@ public:
     void LoadTexture(int id, const std::string& path);
     
     // Main render function
-    void Render(SDL_Renderer* ren, const Camera& cam, const Map& map, Registry& reg);
+    void Render(SDL_Renderer* ren, const Camera& cam, const Map& map, Registry& reg, float roll = 0.0f);
 
 private:
-    void RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map);
-    void RenderSprites(SDL_Renderer* ren, const Camera& cam, const Map& map, Registry& reg);
+    void RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map, float roll);
+    void RenderSprites(SDL_Renderer* ren, const Camera& cam, const Map& map, Registry& reg, float roll);
     void RenderFloorCeiling(SDL_Renderer* ren, const Camera& cam); // Optional/Solid color
 
     std::map<int, std::shared_ptr<Texture>> m_Textures;

@@ -16,37 +16,93 @@ void JumpShootGame::OnUpdate(float deltaTime) {
 
     } 
 
-    else if (m_State == GameState::Playing) {
+        else if (m_State == GameState::Playing) {
 
-        auto* phys = m_Registry.GetComponent<PhysicsComponent>(m_PlayerEntity);
+            if (!m_GameFinished) m_RunTimer += deltaTime;
 
-        auto* weapon = m_Registry.GetComponent<WeaponComponent>(m_PlayerEntity);
+    
 
-        
+            auto* phys = m_Registry.GetComponent<PhysicsComponent>(m_PlayerEntity);
 
-        m_TimeScale = 1.0f;
+            auto* weapon = m_Registry.GetComponent<WeaponComponent>(m_PlayerEntity);
 
-        if (phys && !phys->isGrounded && weapon && weapon->isDrawing) {
+            
 
-            m_TimeScale = 0.3f; // Aero-Focus
+            m_TimeScale = 1.0f;
 
-        }
+            if (phys && !phys->isGrounded && weapon && weapon->isDrawing) {
 
-        
+                m_TimeScale = 0.3f; // Aero-Focus
 
-        float dt = deltaTime * m_TimeScale;
+            }
 
-        
+            
 
-        HandleInputGameplay(dt);
+            float dt = deltaTime * m_TimeScale;
 
-        UpdatePhysics(dt);
+            
 
-        UpdateProjectiles(dt);
+            HandleInputGameplay(dt);
 
-        
+            UpdatePhysics(dt);
 
-        // Screenshake update
+            UpdateProjectiles(dt);
+
+            
+
+            // Hitmarker update
+
+            if (m_HitmarkerTimer > 0) m_HitmarkerTimer -= deltaTime;
+
+    
+
+            // Camera Roll (Leaning)
+
+            float targetRoll = 0.0f;
+
+            if (phys) {
+
+                if (phys->isWallRunning) {
+
+                    // Lean away from wall? Or into it? Usually away looks more "extreme"
+
+                    // For now, let's lean based on horizontal velocity
+
+                    targetRoll = (phys->velX * cos(m_Camera->yaw) + phys->velY * sin(m_Camera->yaw)) * 0.0f; // placeholder
+
+                    // Better: Check move direction
+
+                    if (Input::IsKeyDown(SDL_SCANCODE_A)) targetRoll = -5.0f;
+
+                    if (Input::IsKeyDown(SDL_SCANCODE_D)) targetRoll = 5.0f;
+
+                } else {
+
+                     if (Input::IsKeyDown(SDL_SCANCODE_A)) targetRoll = -2.0f;
+
+                     if (Input::IsKeyDown(SDL_SCANCODE_D)) targetRoll = 2.0f;
+
+                }
+
+            }
+
+            m_CameraRoll = m_CameraRoll * 0.9f + targetRoll * 0.1f;
+
+    
+
+            // Victory Condition
+
+            if (!m_GameFinished && m_TargetsDestroyed >= m_TotalTargets && m_TotalTargets > 0) {
+
+                m_GameFinished = true;
+
+            }
+
+    
+
+            // Screenshake update
+
+    
 
         if (m_ShakeTimer > 0) {
 
@@ -99,6 +155,19 @@ void JumpShootGame::OnUpdate(float deltaTime) {
         for (auto e : deadParticles) m_Registry.DestroyEntity(e);
 
 
+
+        // Target Oscillation
+        auto& targets = m_Registry.View<TargetComponent>();
+        float time = SDL_GetTicks() * 0.002f;
+        for (auto& pair : targets) {
+            if (!pair.second.isDestroyed) {
+                auto* tt = m_Registry.GetComponent<Transform3DComponent>(pair.first);
+                if (tt) {
+                    // Small side-to-side movement
+                    tt->y += sin(time + (float)pair.first * 1.5f) * 0.02f;
+                }
+            }
+        }
 
         // View Bobbing & Sway
 

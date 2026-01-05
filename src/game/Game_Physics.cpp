@@ -133,29 +133,87 @@ void JumpShootGame::UpdatePhysics(float dt) {
 
         
 
-        t->z += phys->velZ * dt;
+                t->z += phys->velZ * dt;
 
         
 
-        // Floor collision
+                
 
-        if (t->z < 0.5f) { 
+        
 
-            if (phys->velZ < -5.0f) {
+                // Floor collision & Jump Pads
 
-                m_ShakeTimer = 0.2f;
+        
 
-                m_ShakeIntensity = std::min(0.2f, abs(phys->velZ) * 0.02f);
+                if (t->z < 0.5f) { 
 
-            }
+        
 
-            t->z = 0.5f;
+                    if (phys->velZ < -5.0f) {
 
-            phys->velZ = 0;
+        
 
-            phys->isGrounded = true;
+                        m_ShakeTimer = 0.2f;
 
-        } else if (t->z > 0.5f) {
+        
+
+                        m_ShakeIntensity = std::min(0.2f, abs(phys->velZ) * 0.02f);
+
+        
+
+                    }
+
+        
+
+                    
+
+        
+
+                    // Check for Jump Pad (ID 3)
+
+        
+
+                    if (m_Map.Get((int)t->x, (int)t->y) == 3) {
+
+        
+
+                        phys->velZ = 12.0f; // Launch!
+
+        
+
+                        phys->isGrounded = false;
+
+        
+
+                        if (m_SfxJump) Mix_PlayChannel(-1, m_SfxJump, 0);
+
+        
+
+                    } else {
+
+        
+
+                        t->z = 0.5f;
+
+        
+
+                        phys->velZ = 0;
+
+        
+
+                        phys->isGrounded = true;
+
+        
+
+                    }
+
+        
+
+                } else if (t->z > 0.5f) {
+
+        
+
+        
 
             phys->isGrounded = false;
 
@@ -335,13 +393,21 @@ void JumpShootGame::UpdateProjectiles(float dt) {
 
             float dist = sqrt(pow(t->x - tt->x, 2) + pow(t->y - tt->y, 2));
 
-            if (dist < tc->radius && t->z < tt->z + 0.5f && t->z > tt->z - 0.5f) {
+                        if (dist < tc->radius && t->z < tt->z + 0.5f && t->z > tt->z - 0.5f) {
 
-                 // Hit
+                             // Hit
 
-                 tcomp->isDestroyed = true;
+                             tcomp->isDestroyed = true;
 
-                 PlaySpatialSfx(m_SfxHit, tt->x, tt->y, tt->z);
+                             m_TargetsDestroyed++;
+
+                             m_HitmarkerTimer = 0.15f;
+
+                             
+
+                             PlaySpatialSfx(m_SfxHit, tt->x, tt->y, tt->z);
+
+            
 
                  m_ShakeTimer = 0.3f;
 

@@ -8,8 +8,13 @@
 using namespace PixelsEngine;
 
 void JumpShootGame::HandleInputGameplay(float dt) {
+    // Victory Restart
+    if (m_GameFinished && Input::IsKeyPressed(SDL_SCANCODE_SPACE)) {
+        InitGame();
+        return;
+    }
+
     if (Input::IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
-        m_State = GameState::Paused;
         SDL_SetRelativeMouseMode(SDL_FALSE);
         m_MenuSelection = 0;
         return;
