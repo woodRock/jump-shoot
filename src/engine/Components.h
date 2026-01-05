@@ -9,7 +9,7 @@ namespace PixelsEngine {
 struct Transform3DComponent {
   float x = 0.0f;
   float y = 0.0f;
-  float z = 0.0f; // 0 is floor
+  float z = 0.0f;   // 0 is floor
   float rot = 0.0f; // Yaw
   float pitch = 0.0f;
 };
@@ -31,7 +31,7 @@ struct PhysicsComponent {
   bool isWallRunning = false;
   float wallRunTimer = 0.0f;
   float friction = 5.0f;
-  
+
   // New Movement Tech
   bool isSliding = false;
   float slideTimer = 0.0f;
@@ -43,7 +43,7 @@ struct PlayerControlComponent {
   float speed = 5.0f;
   float mouseSensitivity = 0.003f;
   float jumpForce = 6.0f;
-  
+
   // Checkpoint
   float spawnX = 2.0f;
   float spawnY = 2.0f;
@@ -65,22 +65,22 @@ struct ProjectileComponent {
 };
 
 struct TargetComponent {
-    bool isDestroyed = false;
-    int points = 10;
+  bool isDestroyed = false;
+  int points = 10;
 };
 
 struct ParticleComponent {
-    float vx, vy, vz;
-    float life;
-    float maxLife;
-    SDL_Color color;
-    float size;
+  float vx, vy, vz;
+  float life;
+  float maxLife;
+  SDL_Color color;
+  float size;
 };
 
 struct WeaponComponent {
-    float cooldown = 0.0f;
-    float drawTime = 0.0f; // How long held
-    bool isDrawing = false;
+  float cooldown = 0.0f;
+  float drawTime = 0.0f; // How long held
+  bool isDrawing = false;
 };
 
 } // namespace PixelsEngine

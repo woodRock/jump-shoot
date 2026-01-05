@@ -38,8 +38,8 @@ Application::Application(const char *title, int width, int height)
 
   // Initialize SDL_mixer
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-      std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: "
-                << Mix_GetError() << std::endl;
+    std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: "
+              << Mix_GetError() << std::endl;
   }
 
   m_Window =
@@ -90,49 +90,48 @@ void Application::Run() {
   m_LastTime = SDL_GetTicks();
 
 #ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop_arg([](void* arg){
-      static_cast<Application*>(arg)->Step();
-  }, this, 0, 1);
+  emscripten_set_main_loop_arg(
+      [](void *arg) { static_cast<Application *>(arg)->Step(); }, this, 0, 1);
 #else
   while (m_IsRunning) {
-      Step();
+    Step();
   }
 #endif
 }
 
 void Application::Step() {
-    Input::SetRenderer(m_Renderer);
-    Input::BeginFrame();
+  Input::SetRenderer(m_Renderer);
+  Input::BeginFrame();
 
-    Uint32 currentTime = SDL_GetTicks();
-    float deltaTime = (currentTime - m_LastTime) / 1000.0f;
-    m_LastTime = currentTime;
+  Uint32 currentTime = SDL_GetTicks();
+  float deltaTime = (currentTime - m_LastTime) / 1000.0f;
+  m_LastTime = currentTime;
 
-    SDL_Event e;
-    while (SDL_PollEvent(&e) != 0) {
-      Input::ProcessEvent(e);
+  SDL_Event e;
+  while (SDL_PollEvent(&e) != 0) {
+    Input::ProcessEvent(e);
 
-      if (e.type == SDL_QUIT) {
-        m_IsRunning = false;
+    if (e.type == SDL_QUIT) {
+      m_IsRunning = false;
 #ifdef __EMSCRIPTEN__
-        emscripten_cancel_main_loop();
+      emscripten_cancel_main_loop();
 #endif
-      } else if (e.type == SDL_WINDOWEVENT) {
-        if (e.window.event == SDL_WINDOWEVENT_RESIZED ||
-            e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-          SDL_RenderSetLogicalSize(m_Renderer, m_Width, m_Height);
-        }
+    } else if (e.type == SDL_WINDOWEVENT) {
+      if (e.window.event == SDL_WINDOWEVENT_RESIZED ||
+          e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+        SDL_RenderSetLogicalSize(m_Renderer, m_Width, m_Height);
       }
     }
+  }
 
-    OnUpdate(deltaTime);
+  OnUpdate(deltaTime);
 
-    SDL_SetRenderDrawColor(m_Renderer, 0, 0, 0, 255);
-    SDL_RenderClear(m_Renderer);
+  SDL_SetRenderDrawColor(m_Renderer, 0, 0, 0, 255);
+  SDL_RenderClear(m_Renderer);
 
-    OnRender();
+  OnRender();
 
-    SDL_RenderPresent(m_Renderer);
+  SDL_RenderPresent(m_Renderer);
 }
 
 } // namespace PixelsEngine

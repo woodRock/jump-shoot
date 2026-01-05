@@ -7,8 +7,8 @@ namespace PixelsEngine {
 class Input {
 public:
   static void BeginFrame();
-  static void ProcessEvent(const SDL_Event& e);
-  static void SetRenderer(SDL_Renderer* renderer);
+  static void ProcessEvent(const SDL_Event &e);
+  static void SetRenderer(SDL_Renderer *renderer);
 
   static bool IsKeyDown(SDL_Scancode key);
   static bool IsKeyPressed(SDL_Scancode key);
@@ -26,7 +26,7 @@ private:
   static Uint32 m_PrevMouseState;
   static int m_MouseX, m_MouseY;
   static int m_MouseRelX, m_MouseRelY;
-  static SDL_Renderer* m_Renderer;
+  static SDL_Renderer *m_Renderer;
 };
 
 } // namespace PixelsEngine

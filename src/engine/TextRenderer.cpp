@@ -98,8 +98,9 @@ int TextRenderer::RenderTextWrapped(const std::string &text, int x, int y,
   return h;
 }
 
-void TextRenderer::RenderTextWrappedCentered(const std::string &text, int x, int y,
-                                            int wrapWidth, SDL_Color color) {
+void TextRenderer::RenderTextWrappedCentered(const std::string &text, int x,
+                                             int y, int wrapWidth,
+                                             SDL_Color color) {
   if (!m_Font)
     return;
 

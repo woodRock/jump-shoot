@@ -1,92 +1,92 @@
 #pragma once
 #include "../engine/Application.h"
-#include "../engine/Raycaster.h"
-#include "../engine/Map.h"
 #include "../engine/ECS.h"
+#include "../engine/Map.h"
+#include "../engine/Raycaster.h"
 #include "../engine/TextRenderer.h"
 #include <memory>
 
-enum class GameState {
-    MainMenu,
-    Playing,
-    Paused
-};
+enum class GameState { MainMenu, Playing, Paused };
 
 class JumpShootGame : public PixelsEngine::Application {
 public:
-    JumpShootGame();
-    ~JumpShootGame();
+  JumpShootGame();
+  ~JumpShootGame();
 
 protected:
-    void OnStart() override;
-    void OnUpdate(float deltaTime) override;
-    void OnRender() override;
+  void OnStart() override;
+  void OnUpdate(float deltaTime) override;
+  void OnRender() override;
 
 private:
-    // Modular systems
-    void InitGame();
-    void InitMainMenu();
-    
-    void UpdateMainMenu(float dt);
-    void UpdateGameplay(float dt);
-    
-    void RenderMainMenu();
-    void RenderGameplay();
-    void RenderUI();
-    void RenderPauseMenu();
+  // Modular systems
+  void InitGame();
+  void InitMainMenu();
 
-    void HandleInputGameplay(float dt);
-    void HandleInputMenu();
-    void HandleInputPause();
-    
-    void UpdatePhysics(float dt);
-    void UpdateProjectiles(float dt);
-    
-    // UI Helpers
-    void DrawButton(int x, int y, int w, int h, const std::string& text, bool selected);
+  void UpdateMainMenu(float dt);
+  void UpdateGameplay(float dt);
 
-    PixelsEngine::Raycaster m_Raycaster;
-    PixelsEngine::Map m_Map;
-    std::unique_ptr<PixelsEngine::TextRenderer> m_TextRenderer;
-    
-    std::shared_ptr<PixelsEngine::Texture> m_BowIdle;
-    std::shared_ptr<PixelsEngine::Texture> m_BowDraw;
-    std::shared_ptr<PixelsEngine::Texture> m_Crosshair;
-    
-    // Sounds
-    Mix_Chunk* m_SfxShoot = nullptr;
-    Mix_Chunk* m_SfxHit = nullptr;
-    Mix_Chunk* m_SfxJump = nullptr;
-    Mix_Chunk* m_SfxGrapple = nullptr;
-    Mix_Music* m_Ambience = nullptr;
-    
-    PixelsEngine::Entity m_PlayerEntity;
-    
-    GameState m_State = GameState::MainMenu;
-    int m_MenuSelection = 0; // 0: Play/Resume, 1: Options, 2: Quit/MainMenu
-    bool m_InOptions = false;
-    
-    // Gameplay Stats & Juice
-    float m_HitmarkerTimer = 0.0f;
-    float m_CameraRoll = 0.0f; // Degrees
-    float m_RunTimer = 0.0f;
-    bool m_GameFinished = false;
-    int m_TargetsDestroyed = 0;
-    int m_TotalTargets = 0;
-    
-    // Main Menu Camera Props
-    float m_MenuCamAngle = 0.0f;
-    float m_TimeScale = 1.0f;
-    float m_BobTimer = 0.0f;
-    float m_SwayTimer = 0.0f;
-    
-    // Screenshake
-    float m_ShakeIntensity = 0.0f;
-    float m_ShakeTimer = 0.0f;
-    
-    bool m_IsGrappling = false;
-    struct { float x, y, z; } m_GrapplePoint;
+  void RenderMainMenu();
+  void RenderGameplay();
+  void RenderUI();
+  void RenderPauseMenu();
 
-    // Spatial Audio Helper
-    void PlaySpatialSfx(Mix_Chunk* chunk, float x, float y, float z);
+  void HandleInputGameplay(float dt);
+  void HandleInputMenu();
+  void HandleInputPause();
+
+  void UpdatePhysics(float dt);
+  void UpdateProjectiles(float dt);
+
+  // UI Helpers
+  void DrawButton(int x, int y, int w, int h, const std::string &text,
+                  bool selected);
+
+  PixelsEngine::Raycaster m_Raycaster;
+  PixelsEngine::Map m_Map;
+  std::unique_ptr<PixelsEngine::TextRenderer> m_TextRenderer;
+
+  std::shared_ptr<PixelsEngine::Texture> m_BowIdle;
+  std::shared_ptr<PixelsEngine::Texture> m_BowDraw;
+  std::shared_ptr<PixelsEngine::Texture> m_Crosshair;
+
+  // Sounds
+  Mix_Chunk *m_SfxShoot = nullptr;
+  Mix_Chunk *m_SfxHit = nullptr;
+  Mix_Chunk *m_SfxJump = nullptr;
+  Mix_Chunk *m_SfxGrapple = nullptr;
+  Mix_Music *m_Ambience = nullptr;
+
+  PixelsEngine::Entity m_PlayerEntity;
+
+  GameState m_State = GameState::MainMenu;
+  int m_MenuSelection = 0; // 0: Play/Resume, 1: Options, 2: Quit/MainMenu
+  bool m_InOptions = false;
+
+  // Gameplay Stats & Juice
+  float m_HitmarkerTimer = 0.0f;
+  float m_CameraRoll = 0.0f; // Degrees
+  float m_RunTimer = 0.0f;
+  bool m_GameFinished = false;
+  int m_TargetsDestroyed = 0;
+  int m_TotalTargets = 0;
+  int m_CurrentLevel = 1;
+
+  // Main Menu Camera Props
+  float m_MenuCamAngle = 0.0f;
+  float m_TimeScale = 1.0f;
+  float m_BobTimer = 0.0f;
+  float m_SwayTimer = 0.0f;
+
+  // Screenshake
+  float m_ShakeIntensity = 0.0f;
+  float m_ShakeTimer = 0.0f;
+
+  bool m_IsGrappling = false;
+  struct {
+    float x, y, z;
+  } m_GrapplePoint;
+
+  // Spatial Audio Helper
+  void PlaySpatialSfx(Mix_Chunk *chunk, float x, float y, float z);
 };
