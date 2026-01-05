@@ -35,16 +35,22 @@ void JumpShootGame::OnRender() {
                     SDL_RenderDrawLine(m_Renderer, w/2, h, w/2, h/2);
                 }
         
-                // Slow-mo Visual Cue
-                if (m_TimeScale < 1.0f) {
-                    SDL_SetRenderDrawBlendMode(m_Renderer, SDL_BLENDMODE_BLEND);
-                    SDL_SetRenderDrawColor(m_Renderer, 0, 100, 255, 40); // Subtle blue tint
-                    SDL_Rect screenRect = {0, 0, w, h};
-                    SDL_RenderFillRect(m_Renderer, &screenRect);
-                    SDL_SetRenderDrawBlendMode(m_Renderer, SDL_BLENDMODE_NONE);
-                }
-        
-                RenderUI();
+                        // Slow-mo Visual Cue (Ghosting)
+                        if (m_TimeScale < 1.0f) {
+                            SDL_SetRenderDrawBlendMode(m_Renderer, SDL_BLENDMODE_BLEND);
+                            // Outer vignette for slow-mo
+                            SDL_SetRenderDrawColor(m_Renderer, 0, 50, 150, 40); 
+                            SDL_Rect screenRect = {0, 0, w, h};
+                            SDL_RenderFillRect(m_Renderer, &screenRect);
+                            
+                            // Central focus
+                            SDL_SetRenderDrawColor(m_Renderer, 255, 255, 255, 10);
+                            SDL_Rect focus = {w/4, h/4, w/2, h/2};
+                            SDL_RenderFillRect(m_Renderer, &focus);
+                            
+                            SDL_SetRenderDrawBlendMode(m_Renderer, SDL_BLENDMODE_NONE);
+                        }
+                                RenderUI();
             } else if (m_State == GameState::Paused) {
                 m_Raycaster.Render(m_Renderer, *m_Camera, m_Map, m_Registry, m_CameraRoll);
                 RenderUI(); // Optional: Hide UI behind pause?

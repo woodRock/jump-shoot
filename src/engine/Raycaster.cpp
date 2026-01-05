@@ -33,20 +33,56 @@ void Raycaster::Render(SDL_Renderer* ren, const Camera& cam, const Map& map, Reg
         m_ZBuffer.resize(w);
     }
     
-    // Ceiling
-    SDL_SetRenderDrawColor(ren, 135, 206, 235, 255);
-    SDL_Rect ceilRect = {0, 0, w, h};
-    SDL_RenderFillRect(ren, &ceilRect);
+    // 1. Procedural Parallax Sky
+    // Draw sky gradient that shifts with camera yaw
+    float skyOffset = (cam.yaw / (2.0f * M_PI)) * w * 2.0f;
+    for (int x = 0; x < w; x++) {
+        // Simple star/cloud pattern based on x and offset
+        int pixelX = (x + (int)skyOffset) % w;
+        float grad = (float)pixelX / w;
+        
+        // Sky Top
+        SDL_SetRenderDrawColor(ren, 20, 30, 60, 255); // Deep midnight blue
+        SDL_RenderDrawLine(ren, x, 0, x, h/2 + (int)cam.pitch);
+        
+        // Horizon glow
+        SDL_SetRenderDrawColor(ren, 60, 80, 120, 255);
+        SDL_RenderDrawPoint(ren, x, h/2 + (int)cam.pitch);
+    }
     
-    // Floor Gradient
+    // Dynamic Ambient Pulse (Global light)
+    float pulse = 0.95f + sin(SDL_GetTicks() * 0.002f) * 0.05f;
+
+    // 2. Floor Gradient with pulse
     for (int y = h/2 + (int)cam.pitch; y < h; y++) {
         float shadow = (float)(y - (h/2 + (int)cam.pitch)) / (h/2);
-        SDL_SetRenderDrawColor(ren, (Uint8)(50 * shadow), (Uint8)(70 * shadow), (Uint8)(50 * shadow), 255);
+        shadow *= pulse;
+        SDL_SetRenderDrawColor(ren, (Uint8)(30 * shadow), (Uint8)(50 * shadow), (Uint8)(30 * shadow), 255);
         SDL_RenderDrawLine(ren, 0, y, w, y);
     }
 
     RenderWalls(ren, cam, map, roll);
     RenderSprites(ren, cam, map, reg, roll);
+
+    // 3. Post-Process: Vignette
+    // We draw a soft darkened border
+    SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+    for (int i = 0; i < 4; i++) {
+        SDL_SetRenderDrawColor(ren, 0, 0, 0, 40 - (i * 10));
+        SDL_Rect r = {i*10, i*10, w - i*20, h - i*20};
+        // This is a bit expensive with Rects, let's just do one thick subtle one
+    }
+    // Efficient Vignette
+    SDL_SetRenderDrawColor(ren, 0, 0, 0, 60);
+    // Left
+    SDL_Rect vL = {0, 0, 80, h}; SDL_RenderFillRect(ren, &vL);
+    // Right
+    SDL_Rect vR = {w - 80, 0, 80, h}; SDL_RenderFillRect(ren, &vR);
+    // Top/Bottom (Subtle)
+    SDL_SetRenderDrawColor(ren, 0, 0, 0, 40);
+    SDL_Rect vT = {0, 0, w, 40}; SDL_RenderFillRect(ren, &vT);
+    SDL_Rect vB = {0, h - 40, w, 40}; SDL_RenderFillRect(ren, &vB);
+    SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_NONE);
 }
 
 void Raycaster::RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map, float roll) {
@@ -117,7 +153,19 @@ void Raycaster::RenderWalls(SDL_Renderer* ren, const Camera& cam, const Map& map
         g = (Uint8)(g * shadow + fogColor.g * (1.0f - shadow));
         b = (Uint8)(b * shadow + fogColor.b * (1.0f - shadow));
         tex->SetColorMod(r, g, b);
+
+        // Render Main Wall
         tex->RenderRect(x, drawStart, &srcRect, 1, drawEnd - drawStart);
+
+        // 4. Corner Shading (Fake AO)
+        // Darken the top and bottom of the wall slightly more to ground it
+        SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_MOD);
+        SDL_SetRenderDrawColor(ren, 100, 100, 100, 255);
+        SDL_RenderDrawPoint(ren, x, drawStart);
+        SDL_RenderDrawPoint(ren, x, drawStart + 1);
+        SDL_RenderDrawPoint(ren, x, drawEnd - 1);
+        SDL_RenderDrawPoint(ren, x, drawEnd - 2);
+        SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_NONE);
     }
 }
 
@@ -174,7 +222,7 @@ void Raycaster::RenderSprites(SDL_Renderer* ren, const Camera& cam, const Map& m
         
         float shadow = 1.0f / (1.0f + transformY * 0.1f);
         shadow = std::max(0.1f, std::min(1.0f, shadow));
-        SDL_Color fogColor = {50, 50, 60, 255};
+        SDL_Color fogColor = {20, 30, 60, 255}; // Match midnight blue sky
         if (s.bill) {
             Texture* tex = s.bill->texture.get(); if (!tex) continue;
             Uint8 r = 255, g = 255, b = 255;

@@ -15,6 +15,7 @@ void JumpShootGame::HandleInputGameplay(float dt) {
     }
 
     if (Input::IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
+        m_State = GameState::Paused;
         SDL_SetRelativeMouseMode(SDL_FALSE);
         m_MenuSelection = 0;
         return;
