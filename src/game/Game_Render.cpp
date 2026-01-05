@@ -19,8 +19,8 @@ void JumpShootGame::OnRender() {
         
         RenderMainMenu();
     } else if (m_State == GameState::Playing) {
-        int w, h;
-        SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+        int w = m_Width;
+        int h = m_Height;
         
         // Apply Bobbing to Camera z temporarily for render
         Camera bobCam = *m_Camera;

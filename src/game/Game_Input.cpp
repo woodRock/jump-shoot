@@ -15,6 +15,10 @@ void JumpShootGame::HandleInputGameplay(float dt) {
         return;
     }
 
+    if (Input::IsKeyPressed(Config::GetKeybind(GameAction::ToggleFullScreen))) {
+        ToggleFullScreen();
+    }
+
     auto* t = m_Registry.GetComponent<Transform3DComponent>(m_PlayerEntity);
     auto* p = m_Registry.GetComponent<PlayerControlComponent>(m_PlayerEntity);
     auto* phys = m_Registry.GetComponent<PhysicsComponent>(m_PlayerEntity);
@@ -130,12 +134,12 @@ void JumpShootGame::HandleInputGameplay(float dt) {
 }
 
 void JumpShootGame::HandleInputMenu() {
-    int w, h;
-    SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+    int w = m_Width;
+    int h = m_Height;
     int mx, my;
     Input::GetMousePosition(mx, my);
 
-    int btnW = 200;
+    int btnW = 240;
     int btnH = 50;
     int startY = 300;
     int gap = 70;
@@ -143,8 +147,10 @@ void JumpShootGame::HandleInputMenu() {
     
     bool action = false;
 
+    int numButtons = m_InOptions ? 2 : 3;
+
     // Mouse Interaction
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < numButtons; i++) {
         int by = startY + gap * i;
         if (mx >= startX && mx <= startX + btnW && my >= by && my <= by + btnH) {
             if (m_MenuSelection != i) m_MenuSelection = i;
@@ -158,43 +164,62 @@ void JumpShootGame::HandleInputMenu() {
     // Keyboard Interaction
     if (Input::IsKeyPressed(SDL_SCANCODE_W) || Input::IsKeyPressed(SDL_SCANCODE_UP)) {
         m_MenuSelection--;
-        if (m_MenuSelection < 0) m_MenuSelection = 2;
+        if (m_MenuSelection < 0) m_MenuSelection = numButtons - 1;
     }
     if (Input::IsKeyPressed(SDL_SCANCODE_S) || Input::IsKeyPressed(SDL_SCANCODE_DOWN)) {
         m_MenuSelection++;
-        if (m_MenuSelection > 2) m_MenuSelection = 0;
+        if (m_MenuSelection > numButtons - 1) m_MenuSelection = 0;
     }
     
     if (Input::IsKeyPressed(SDL_SCANCODE_RETURN) || Input::IsKeyPressed(SDL_SCANCODE_SPACE)) {
         action = true;
     }
+
+    if (Input::IsKeyPressed(Config::GetKeybind(GameAction::ToggleFullScreen))) {
+        ToggleFullScreen();
+    }
     
     if (action) {
-        if (m_MenuSelection == 0) { // Play
-            InitGame();
-            m_State = GameState::Playing;
-            SDL_SetRelativeMouseMode(SDL_TRUE);
-        } else if (m_MenuSelection == 1) { // Options
-            // TODO
-        } else if (m_MenuSelection == 2) { // Quit
-            m_IsRunning = false;
+        if (!m_InOptions) {
+            if (m_MenuSelection == 0) { // Play
+                InitGame();
+                m_State = GameState::Playing;
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+            } else if (m_MenuSelection == 1) { // Options
+                m_InOptions = true;
+                m_MenuSelection = 0;
+            } else if (m_MenuSelection == 2) { // Quit
+                m_IsRunning = false;
+            }
+        } else {
+            if (m_MenuSelection == 0) { // Toggle FS
+                ToggleFullScreen();
+            } else if (m_MenuSelection == 1) { // Back
+                m_InOptions = false;
+                m_MenuSelection = 1;
+            }
         }
     }
 }
 
 void JumpShootGame::HandleInputPause() {
     if (Input::IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
-        m_State = GameState::Playing;
-        SDL_SetRelativeMouseMode(SDL_TRUE);
+        if (m_InOptions) {
+            m_InOptions = false;
+            m_MenuSelection = 1;
+        } else {
+            m_State = GameState::Playing;
+            SDL_SetRelativeMouseMode(SDL_TRUE);
+        }
         return;
     }
 
-    int w, h;
-    SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+    int w = m_Width;
+    int h = m_Height;
     int mx, my;
     Input::GetMousePosition(mx, my);
 
-    int btnW = 200;
+    int btnW = 240;
     int btnH = 50;
     int startY = 250;
     int gap = 70;
@@ -202,8 +227,10 @@ void JumpShootGame::HandleInputPause() {
     
     bool action = false;
 
+    int numButtons = m_InOptions ? 2 : 4;
+
     // Mouse Interaction
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < numButtons; i++) {
         int by = startY + gap * i;
         if (mx >= startX && mx <= startX + btnW && my >= by && my <= by + btnH) {
              if (m_MenuSelection != i) m_MenuSelection = i;
@@ -217,28 +244,42 @@ void JumpShootGame::HandleInputPause() {
     // Keyboard Interaction
     if (Input::IsKeyPressed(SDL_SCANCODE_W) || Input::IsKeyPressed(SDL_SCANCODE_UP)) {
         m_MenuSelection--;
-        if (m_MenuSelection < 0) m_MenuSelection = 3;
+        if (m_MenuSelection < 0) m_MenuSelection = numButtons - 1;
     }
     if (Input::IsKeyPressed(SDL_SCANCODE_S) || Input::IsKeyPressed(SDL_SCANCODE_DOWN)) {
         m_MenuSelection++;
-        if (m_MenuSelection > 3) m_MenuSelection = 0;
+        if (m_MenuSelection > numButtons - 1) m_MenuSelection = 0;
     }
     
     if (Input::IsKeyPressed(SDL_SCANCODE_RETURN) || Input::IsKeyPressed(SDL_SCANCODE_SPACE)) {
         action = true;
     }
+
+    if (Input::IsKeyPressed(Config::GetKeybind(GameAction::ToggleFullScreen))) {
+        ToggleFullScreen();
+    }
     
     if (action) {
-        if (m_MenuSelection == 0) { // Resume
-            m_State = GameState::Playing;
-            SDL_SetRelativeMouseMode(SDL_TRUE);
-        } else if (m_MenuSelection == 1) { // Save
-            // TODO
-        } else if (m_MenuSelection == 2) { // Main Menu
-             m_State = GameState::MainMenu;
-             m_MenuSelection = 0;
-        } else if (m_MenuSelection == 3) { // Quit
-            m_IsRunning = false;
+        if (!m_InOptions) {
+            if (m_MenuSelection == 0) { // Resume
+                m_State = GameState::Playing;
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+            } else if (m_MenuSelection == 1) { // Options
+                m_InOptions = true;
+                m_MenuSelection = 0;
+            } else if (m_MenuSelection == 2) { // Main Menu
+                 m_State = GameState::MainMenu;
+                 m_MenuSelection = 0;
+            } else if (m_MenuSelection == 3) { // Quit
+                m_IsRunning = false;
+            }
+        } else {
+            if (m_MenuSelection == 0) { // Toggle FS
+                ToggleFullScreen();
+            } else if (m_MenuSelection == 1) { // Back
+                m_InOptions = false;
+                m_MenuSelection = 1;
+            }
         }
     }
 }

@@ -21,7 +21,8 @@ enum class GameAction {
   Jump,
   Sneak,
   Shove,
-  ToggleWeapon
+  ToggleWeapon,
+  ToggleFullScreen
 };
 
 class Config {
@@ -44,6 +45,7 @@ public:
     m_Keybinds[GameAction::Shove] = SDL_SCANCODE_V;
     m_Keybinds[GameAction::Dash] = SDL_SCANCODE_B;
     m_Keybinds[GameAction::ToggleWeapon] = SDL_SCANCODE_F;
+    m_Keybinds[GameAction::ToggleFullScreen] = SDL_SCANCODE_F11;
   }
 
   static SDL_Scancode GetKeybind(GameAction action) {

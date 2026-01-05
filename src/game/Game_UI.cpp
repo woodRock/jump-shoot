@@ -20,26 +20,34 @@ void JumpShootGame::DrawButton(int x, int y, int w, int h, const std::string& te
 }
 
 void JumpShootGame::RenderMainMenu() {
-    int w, h;
-    SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+    int w = m_Width;
+    int h = m_Height;
     
     // Title
     m_TextRenderer->RenderTextCentered("JUMP SHOOT", w/2, 100, {255, 200, 50, 255});
     m_TextRenderer->RenderTextCentered("Parkour Archer", w/2, 140, {200, 200, 200, 255});
     
-    int btnW = 200;
+    int btnW = 240;
     int btnH = 50;
     int startY = 300;
     int gap = 70;
     
-    DrawButton(w/2 - btnW/2, startY, btnW, btnH, "PLAY", m_MenuSelection == 0);
-    DrawButton(w/2 - btnW/2, startY + gap, btnW, btnH, "OPTIONS", m_MenuSelection == 1);
-    DrawButton(w/2 - btnW/2, startY + gap*2, btnW, btnH, "QUIT", m_MenuSelection == 2);
+    if (!m_InOptions) {
+        DrawButton(w/2 - btnW/2, startY, btnW, btnH, "PLAY", m_MenuSelection == 0);
+        DrawButton(w/2 - btnW/2, startY + gap, btnW, btnH, "OPTIONS", m_MenuSelection == 1);
+        DrawButton(w/2 - btnW/2, startY + gap*2, btnW, btnH, "QUIT", m_MenuSelection == 2);
+    } else {
+        m_TextRenderer->RenderTextCentered("OPTIONS", w/2, 240, {255, 255, 255, 255});
+        bool isFullscreen = SDL_GetWindowFlags(m_Window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+        std::string fsText = isFullscreen ? "FULLSCREEN: ON" : "FULLSCREEN: OFF";
+        DrawButton(w/2 - btnW/2, startY, btnW, btnH, fsText, m_MenuSelection == 0);
+        DrawButton(w/2 - btnW/2, startY + gap, btnW, btnH, "BACK", m_MenuSelection == 1);
+    }
 }
 
 void JumpShootGame::RenderPauseMenu() {
-    int w, h;
-    SDL_GetRendererOutputSize(m_Renderer, &w, &h);
+    int w = m_Width;
+    int h = m_Height;
     
     // Darken background
     SDL_SetRenderDrawColor(m_Renderer, 0, 0, 0, 150);
@@ -48,25 +56,29 @@ void JumpShootGame::RenderPauseMenu() {
     
     m_TextRenderer->RenderTextCentered("PAUSED", w/2, 100, {255, 255, 255, 255});
     
-    int btnW = 200;
+    int btnW = 240;
     int btnH = 50;
     int startY = 250;
     int gap = 70;
     
-    DrawButton(w/2 - btnW/2, startY, btnW, btnH, "RESUME", m_MenuSelection == 0);
-    DrawButton(w/2 - btnW/2, startY + gap, btnW, btnH, "SAVE GAME", m_MenuSelection == 1);
-    DrawButton(w/2 - btnW/2, startY + gap*2, btnW, btnH, "MAIN MENU", m_MenuSelection == 2);
-    DrawButton(w/2 - btnW/2, startY + gap*3, btnW, btnH, "QUIT", m_MenuSelection == 3);
+    if (!m_InOptions) {
+        DrawButton(w/2 - btnW/2, startY, btnW, btnH, "RESUME", m_MenuSelection == 0);
+        DrawButton(w/2 - btnW/2, startY + gap, btnW, btnH, "OPTIONS", m_MenuSelection == 1);
+        DrawButton(w/2 - btnW/2, startY + gap*2, btnW, btnH, "MAIN MENU", m_MenuSelection == 2);
+        DrawButton(w/2 - btnW/2, startY + gap*3, btnW, btnH, "QUIT", m_MenuSelection == 3);
+    } else {
+        m_TextRenderer->RenderTextCentered("OPTIONS", w/2, 180, {255, 255, 255, 255});
+        bool isFullscreen = SDL_GetWindowFlags(m_Window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+        std::string fsText = isFullscreen ? "FULLSCREEN: ON" : "FULLSCREEN: OFF";
+        DrawButton(w/2 - btnW/2, startY, btnW, btnH, fsText, m_MenuSelection == 0);
+        DrawButton(w/2 - btnW/2, startY + gap, btnW, btnH, "BACK", m_MenuSelection == 1);
+    }
 }
 
 void JumpShootGame::RenderUI() {
-
-    int w, h;
-
-    SDL_GetRendererOutputSize(m_Renderer, &w, &h);
-
+    int w = m_Width;
+    int h = m_Height;
     
-
     // Tutorial Text
 
     auto* t = m_Registry.GetComponent<Transform3DComponent>(m_PlayerEntity);
@@ -91,13 +103,23 @@ void JumpShootGame::RenderUI() {
 
         
 
-        if (!tutorial.empty()) {
+                if (!tutorial.empty()) {
 
-            m_TextRenderer->RenderTextCentered(tutorial, w/2, 50, {255, 255, 255, 200});
+        
 
-        }
+                    m_TextRenderer->RenderTextWrappedCentered(tutorial, w/2, 50, 600, {255, 255, 255, 200});
 
-    }
+        
+
+                }
+
+        
+
+            }
+
+        
+
+        
 
 
 

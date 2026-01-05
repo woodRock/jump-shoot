@@ -27,9 +27,13 @@ void Raycaster::LoadTexture(int id, const std::string& path) {
 }
 
 void Raycaster::Render(SDL_Renderer* ren, const Camera& cam, const Map& map, Registry& reg) {
-    // Update size if changed
+    // Update size using logical size if available, otherwise output size
     int w, h;
-    SDL_GetRendererOutputSize(ren, &w, &h);
+    SDL_RenderGetLogicalSize(ren, &w, &h);
+    if (w == 0 || h == 0) {
+        SDL_GetRendererOutputSize(ren, &w, &h);
+    }
+
     if (w != m_ScreenWidth || h != m_ScreenHeight) {
         m_ScreenWidth = w;
         m_ScreenHeight = h;

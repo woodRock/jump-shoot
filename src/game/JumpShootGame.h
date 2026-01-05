@@ -64,6 +64,7 @@ private:
     
     GameState m_State = GameState::MainMenu;
     int m_MenuSelection = 0; // 0: Play/Resume, 1: Options, 2: Quit/MainMenu
+    bool m_InOptions = false;
     
     // Main Menu Camera Props
     float m_MenuCamAngle = 0.0f;

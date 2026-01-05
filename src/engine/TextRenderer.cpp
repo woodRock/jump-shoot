@@ -98,6 +98,25 @@ int TextRenderer::RenderTextWrapped(const std::string &text, int x, int y,
   return h;
 }
 
+void TextRenderer::RenderTextWrappedCentered(const std::string &text, int x, int y,
+                                            int wrapWidth, SDL_Color color) {
+  if (!m_Font)
+    return;
+
+  SDL_Surface *surface =
+      TTF_RenderText_Blended_Wrapped(m_Font, text.c_str(), color, wrapWidth);
+  if (!surface)
+    return;
+
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(m_Renderer, surface);
+  if (texture) {
+    SDL_Rect destRect = {x - surface->w / 2, y, surface->w, surface->h};
+    SDL_RenderCopy(m_Renderer, texture, NULL, &destRect);
+    SDL_DestroyTexture(texture);
+  }
+  SDL_FreeSurface(surface);
+}
+
 int TextRenderer::MeasureTextWrapped(const std::string &text, int wrapWidth) {
   if (!m_Font)
     return 0;
